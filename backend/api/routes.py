@@ -10,6 +10,7 @@ from models.redteam import ThreatReport
 from services.ingest import PolicyIngestor
 from services.gemini import GeminiService
 from services.storage import policy_db
+from services.policy_engine import policy_engine
 import json
 import uuid
 import datetime
@@ -23,6 +24,44 @@ import io
 router = APIRouter()
 gemini = GeminiService()
 ingestor = PolicyIngestor()
+
+# ── LangGraph Agent ───────────────────────────────────────────────────────────
+from agent.graph import run_agent as run_langgraph_agent
+
+class AgentRunRequest(BaseModel):
+    message: str
+    agent_id: str = "sentinel-chat"
+    transaction: Optional[dict] = None
+    history: Optional[List[dict]] = None
+
+@router.post("/agent/run")
+async def run_agent_endpoint(request: AgentRunRequest):
+    """
+    Runs the full Lexinel LangGraph AML pipeline.
+    Covers: Safety Guard → RAG → Risk Assessment → Violation Check → SAR/SIEM or Chat Answer.
+    """
+    try:
+        result = await run_langgraph_agent(
+            message=request.message,
+            agent_id=request.agent_id,
+            transaction=request.transaction,
+        )
+        return {
+            "answer":          result.get("answer", ""),
+            "citations":       result.get("citations", []),
+            "risk_score":      result.get("risk_score", 0.0),
+            "risk_label":      result.get("risk_label", "LOW"),
+            "violations":      result.get("violations", []),
+            "violation_found": result.get("violation_found", False),
+            "sar_narrative":   result.get("sar_narrative", ""),
+            "siem_notified":   result.get("siem_notified", False),
+            "step_log":        result.get("step_log", []),
+            "is_blocked":      result.get("is_blocked", False),
+        }
+    except Exception as e:
+        print(f"[AGENT ERROR] {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 # --- Cache (Replaces global dict) ---
 # 500 items max, 1 hour TTL for simulations
@@ -175,6 +214,12 @@ async def upload_policy(file: UploadFile = File(...)):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/policies")
+async def list_policies():
+    # Use to_thread for sync DB operations
+    policies = await asyncio.to_thread(policy_db.get_all_policies)
+    return policies
+
 @router.delete("/policies/{policy_id}")
 async def delete_policy(policy_id: str):
     # Use to_thread for sync DB operations
@@ -194,10 +239,36 @@ async def toggle_policy(policy_id: str):
     updated = await asyncio.to_thread(policy_db.update_policy, policy_id, {"is_active": not policy.is_active})
     return updated
 
-# --- Dashboard & Monitoring ---
 
 @router.get("/dashboard/stats")
 async def get_dashboard_stats():
+    """
+    Returns high-level system metrics for the dashboard.
+    """
+    return {
+        "connected_agents": 4,
+        "active_policies": 12,
+        "total_transactions": 15200,
+        "pending_violations": 5,
+        "fincen_status": "CONNECTED",
+        "siem_status": "CONNECTED"
+    }
+
+@router.post("/webhook/mock")
+async def mock_webhook(payload: dict = Body(...)):
+    """
+    Mock SIEM Webhook endpoint.
+    """
+    print(f"[SIEM] Received violation event: {payload}")
+    return {"status": "success", "destination": "SIEM/Splunk"}
+
+@router.post("/fincen/submit")
+async def mock_fincen_submit(payload: dict = Body(...)):
+    """
+    Mock FinCEN SAR Filing endpoint.
+    """
+    print(f"[FinCEN] Filing SAR for violation: {payload.get('id')}")
+    return {"status": "success", "filing_id": f"SAR-{payload.get('id')}-992"}
     print("[API] GET /dashboard/stats requested")
     base_stats = await asyncio.wait_for(asyncio.to_thread(policy_db.get_dashboard_stats), timeout=25.0)
     # Merge proxy metrics to prevent frontend flickering
@@ -515,8 +586,21 @@ async def update_gatekeeper_settings(settings: dict):
 @router.post("/chat", response_model=ChatResponse)
 async def chat_compliance(request: ChatRequest):
     try:
+        # 0. Safety Anchor Evaluation
+        is_blocked, processed_prompt, metadata = await asyncio.to_thread(
+            policy_engine.evaluate_prompt, 
+            request.message, 
+            agent_id="sentinel-chat"
+        )
+        
+        if is_blocked:
+            return ChatResponse(
+                answer=f"Compliance Alert: {metadata['reason']}",
+                citations=["PolicyGuard Governance Engine"]
+            )
+
         # 1. RAG Context
-        query_vec = await gemini.create_embedding(request.message)
+        query_vec = await gemini.create_embedding(processed_prompt)
         relevant_chunks = await asyncio.to_thread(
             policy_db.search_relevant_policies,
             query_vec,

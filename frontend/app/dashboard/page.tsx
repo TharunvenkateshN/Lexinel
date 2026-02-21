@@ -113,8 +113,28 @@ export default function OverviewPage() {
     const [mounted, setMounted] = useState(false);
     const [activeTab, setActiveTab] = useState('Overview');
     const [notif, setNotif] = useState(false);
+    const [kpis, setKpis] = useState(KPI);
 
-    useEffect(() => { setMounted(true); }, []);
+    useEffect(() => { 
+        setMounted(true); 
+        async function fetchStats() {
+            try {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/dashboard/stats`);
+                if (!response.ok) throw new Error("Failed to fetch");
+                const data = await response.json();
+                
+                setKpis([
+                    { ...KPI[0], value: `${data.system_health}%`, delta: data.violations === 0 ? '+0%' : '-15%' },
+                    { ...KPI[1], value: data.traces_analyzed.toLocaleString() },
+                    { ...KPI[2], value: data.violations.toLocaleString(), delta: `${((data.violations / (data.traces_analyzed || 1)) * 100).toFixed(1)}% block rate` },
+                    { ...KPI[3], value: '84ms' },
+                ]);
+            } catch (err) {
+                console.error("Dashboard stats error:", err);
+            }
+        }
+        fetchStats();
+    }, []);
 
     return (
         <div className="space-y-6 pb-20 max-w-[1600px] mx-auto">
@@ -188,7 +208,7 @@ export default function OverviewPage() {
 
             {/* ── KPI Cards ──────────────────────────────────────── */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                {KPI.map((k, i) => (
+                {kpis.map((k, i) => (
                     <div key={i} className="glass-card rounded-xl p-4"
                         style={{ boxShadow: `0 0 20px ${k.glow}, inset 0 0 20px ${k.glow}` }}>
                         <div className="flex items-center justify-between mb-3">

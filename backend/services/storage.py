@@ -94,7 +94,7 @@ class PolicyStorage:
                     eval_count += 1
                 except: pass
             self._evaluations.reverse() 
-            print(f"[OK] Loaded {eval_count} evaluations from Firebase")
+            self._load_vectors()
             self._initialized = True
                 
         except Exception as e:
@@ -121,7 +121,7 @@ class PolicyStorage:
                 with open("settings_store.json", "r") as f:
                     self._local_settings = PolicySettings(**json.load(f))
                     print("[STORAGE] Loaded general settings from settings_store.json")
-            
+            self._load_vectors()
             self._initialized = True
         except Exception as e:
             print(f"Error loading from local JSON: {e}")
@@ -636,6 +636,30 @@ class PolicyStorage:
         
         return history
                 
+                
+    def add_hitl_violation(self, violation: dict):
+        """Add a flagged transaction to the HITL queue for manual review."""
+        with self._lock:
+            if "id" not in violation and "transaction_id" in violation:
+                violation["id"] = violation["transaction_id"]
+            
+            # De-dupe
+            if any(v.get('id') == violation.get('id') for v in self._hitl_queue):
+                return
+                
+            self._hitl_queue.append(violation)
+            if len(self._hitl_queue) > 100:
+                self._hitl_queue.pop(0)
+
+    def resolve_hitl_violation(self, violation_id: str):
+        """Remove a violation from the queue once action has been taken."""
+        with self._lock:
+            self._hitl_queue = [v for v in self._hitl_queue if v.get('id') != violation_id]
+
+    def get_hitl_violations(self) -> list:
+        """Fetch all violations pending manual review."""
+        return self._hitl_queue
+
     async def save_settings(self, settings: PolicySettings):
         print("[STORAGE] save_settings requested")
         def _save():

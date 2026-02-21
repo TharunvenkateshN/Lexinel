@@ -111,22 +111,60 @@ export default function RedTeamPage() {
         setLogs([]);
         setVerdict(null);
 
-        const sequence = REDTEAM_LOG_SEQUENCES[selectedScenario.id] || [];
-        for (const line of sequence) {
-            await new Promise(r => setTimeout(r, 400 + Math.random() * 300));
-            setLogs(prev => [...prev, line]);
-        }
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/redteam/attack`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    system_spec: {
+                        agent_name: "Lexinel AML Sentinel",
+                        target_scenario: selectedScenario.id,
+                        vector: selectedScenario.vector
+                    },
+                    policy_matrix: [] // Can be populated with active rules for dynamic testing
+                })
+            });
 
-        const lastLine = sequence[sequence.length - 1] || '';
-        const v = lastLine.includes('RESISTANT') ? 'RESISTANT' :
-            lastLine.includes('PARTIAL') ? 'PARTIAL' : 'VULNERABLE';
-        setVerdict(v as any);
-        setResults(prev => [{
-            scenario: selectedScenario.name,
-            verdict: v,
-            time: new Date().toLocaleTimeString()
-        }, ...prev.slice(0, 9)]);
-        setRunState('complete');
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
+
+            if (reader) {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n\n');
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.replace('data: ', ''));
+                                if (data.log) {
+                                    setLogs(prev => [...prev, data.log]);
+                                }
+                                if (data.report) {
+                                    const score = data.report.overall_resilience_score || 0;
+                                    const v = score > 80 ? 'RESISTANT' : score > 50 ? 'PARTIAL' : 'VULNERABLE';
+                                    setVerdict(v as any);
+                                    
+                                    // Restore history tracking
+                                    setResults(prev => [{
+                                        scenario: (selectedScenario as any).name,
+                                        verdict: v,
+                                        time: new Date().toLocaleTimeString()
+                                    }, ...prev.slice(0, 9)]);
+                                }
+                            } catch (e) {
+                                console.error("Parse error", e);
+                            }
+                        }
+                    }
+                }
+            }
+        } finally {
+            setRunState('complete');
+        }
     };
 
     const severityColor = (s: string) =>

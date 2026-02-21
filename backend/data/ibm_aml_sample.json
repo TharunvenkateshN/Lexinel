@@ -1,0 +1,10 @@
+[
+  { "id": "TXN-8821", "from": "ACC-4401", "to": "ACC-9977", "amount": 14500, "type": "TRANSFER", "timestamp": "2024-01-15T03:22:00", "country": "US", "is_cross_border": false },
+  { "id": "TXN-4432", "from": "ACC-1102", "to": "ACC-6634", "amount": 9800, "type": "CASH_OUT", "timestamp": "2024-01-15T03:25:00", "country": "US", "is_cross_border": false },
+  { "id": "TXN-2210", "from": "ACC-3301", "to": "ACC-7765", "amount": 1990, "type": "TRANSFER", "timestamp": "2024-01-15T03:31:00", "country": "CN", "is_cross_border": true },
+  { "id": "TXN-5518", "from": "ACC-8812", "to": "ACC-3345", "amount": 500, "type": "PAYMENT", "timestamp": "2024-01-15T03:40:00", "country": "US", "is_cross_border": false },
+  { "id": "TXN-6643", "from": "ACC-5501", "to": "ACC-9977", "amount": 22100, "type": "TRANSFER", "timestamp": "2024-01-15T03:45:00", "country": "RU", "is_cross_border": true },
+  { "id": "TXN-1197", "from": "ACC-2209", "to": "ACC-4478", "amount": 3200, "type": "CASH_IN", "timestamp": "2024-01-15T04:01:00", "country": "UK", "is_cross_border": false },
+  { "id": "TXN-7734", "from": "ACC-6601", "to": "ACC-9977", "amount": 11500, "type": "TRANSFER", "timestamp": "2024-01-15T04:10:00", "country": "US", "is_cross_border": false },
+  { "id": "TXN-8833", "from": "ACC-1103", "to": "ACC-8812", "amount": 199500, "type": "WIRE", "timestamp": "2024-01-15T05:10:00", "country": "KY", "is_cross_border": true }
+]

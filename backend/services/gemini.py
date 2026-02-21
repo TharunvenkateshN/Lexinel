@@ -120,7 +120,7 @@ class GeminiService:
                         # 2. MODEL DIVERSIFICATION 🔀: 
                         # Always try a different model if it's a 404, or if we've cycled through keys once for 429
                         if is_not_found or attempt >= len(self.clients):
-                             model_fallbacks = ["gemini-3-flash-preview", "gemini-2.5-flash", "gemini-2.0-flash"]
+                             model_fallbacks = ["models/gemini-3-flash-preview", "models/gemini-2.5-flash", "models/gemini-1.5-flash"]
                              current_model = model_fallbacks[attempt % len(model_fallbacks)]
                              print(f"🔀 {'Model Missing' if is_not_found else 'Keys exhausted'}. Switching to: {current_model}")
                         
@@ -522,7 +522,7 @@ class GeminiService:
                 task_type="inline_filter",
                 retries=1,
                 config={
-                    'max_output_tokens': 300,
+                    'max_output_tokens': 1000,
                     'temperature': 0.5
                 }
             )
@@ -613,11 +613,10 @@ class GeminiService:
         # EXPERIMENTAL RED TEAM MODELS (Ordered by Reasoning Capability)
         # We explicitly switch models here to ensure the Red Team task completes even if the primary Pro model is rate-limited.
         red_team_stack = [
-            settings.MODEL_PRO,           # Configured Primary (Gemini 3 Pro)
-            "gemini-3-flash-preview",     # High speed 3 fallback
-            "gemini-2.5-pro",             # Stable High-Reasoning
-            "gemini-2.0-flash-thinking-exp-1219", # Thinking Flash
-            "gemini-2.0-flash"            # Fast Fallback
+            settings.MODEL_PRO,           # models/gemini-2.5-flash
+            "models/gemini-3-flash-preview",
+            "models/gemini-1.5-pro",
+            "models/gemini-1.5-flash"
         ]
 
         last_error = None

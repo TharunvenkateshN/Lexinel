@@ -42,7 +42,7 @@ export function ChatWidget() {
         setLoading(true);
 
         try {
-            const response = await fetch("http://127.0.0.1:8000/api/v1/chat", {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/chat`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -137,7 +137,28 @@ export function ChatWidget() {
                                             <Bot className="h-4 w-4 mr-2.5 mt-0.5 text-[#1aff8c] shrink-0" />
                                         )}
                                         <div className="flex flex-col gap-2">
-                                            <div className="whitespace-pre-wrap leading-relaxed">{msg.content}</div>
+                                            <div className="leading-relaxed space-y-1">
+                                                {msg.content.split('\n').map((line, li) => {
+                                                    // Bullet lines: strip leading * or -
+                                                    const isBullet = /^\s*[\*\-]\s+/.test(line);
+                                                    const text = isBullet ? line.replace(/^\s*[\*\-]\s+/, '') : line;
+                                                    // Inline bold: **text**
+                                                    const parts = text.split(/(\*\*[^*]+\*\*)/g).map((part, pi) => {
+                                                        if (part.startsWith('**') && part.endsWith('**')) {
+                                                            return <strong key={pi} className="font-semibold text-white">{part.slice(2, -2)}</strong>;
+                                                        }
+                                                        return <span key={pi}>{part}</span>;
+                                                    });
+                                                    if (isBullet) return (
+                                                        <div key={li} className="flex gap-2 items-start">
+                                                            <span className="text-[#1aff8c] mt-1 shrink-0">▸</span>
+                                                            <span>{parts}</span>
+                                                        </div>
+                                                    );
+                                                    if (!text.trim()) return <div key={li} className="h-1" />;
+                                                    return <div key={li}>{parts}</div>;
+                                                })}
+                                            </div>
                                             {msg.citations && msg.citations.length > 0 && (
                                                 <div className="mt-1 pt-2 border-t border-[rgba(26,255,140,0.1)]">
                                                     <p className="text-[10px] uppercase tracking-wider font-bold text-[rgba(26,255,140,0.4)] mb-1 flex items-center">

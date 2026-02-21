@@ -84,7 +84,7 @@ export function RemediationPanel({ originalText, violations, policySummary, repo
     const [docType, setDocType] = useState("PRD");
     const [reportData, setReportData] = useState<any>(null); // State for report
 
-    const serverUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+    const serverUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:7860";
 
     // Use prop report or state report (for mock)
     const effectiveReport = report || reportData;

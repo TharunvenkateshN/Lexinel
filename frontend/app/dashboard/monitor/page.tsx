@@ -44,38 +44,52 @@ function nowTime() {
 }
 
 export default function MonitorPage() {
-    const [feed, setFeed] = useState(INITIAL_FEED);
+    const [feed, setFeed] = useState<any[]>(INITIAL_FEED);
+    const [stats, setStats] = useState<any>({
+        active_policies: 5,
+        traces_per_min: 0,
+        blocking_rate: 0,
+        avg_latency: 124
+    });
     const [filter, setFilter] = useState<'ALL' | 'BLOCK' | 'WARN' | 'PASS'>('ALL');
     const [paused, setPaused] = useState(false);
-    const pausedRef = useRef(paused);
-    pausedRef.current = paused;
+    const [loading, setLoading] = useState(true);
 
-    // Simulate new entries every 4–7 seconds
     useEffect(() => {
-        const tick = () => {
-            if (pausedRef.current) return;
-            const template = SIMULATED_NEW[Math.floor(Math.random() * SIMULATED_NEW.length)];
-            const id = makeId();
-            const acc = `ACC-${Math.floor(1000 + Math.random() * 8999)}`;
-            const entry = {
-                id,
-                ts: nowTime(),
-                agent: template.rule === 'ALL' || template.rule === 'SYNC' || template.rule === 'HEARTBEAT' ? 'N2L-Engine' : 'IBM-AML-Scanner',
-                rule: template.rule,
-                action: template.action,
-                status: template.status,
-                details: template.details.replace('XXXX', acc.split('-')[1]),
-            };
-            setFeed(prev => [entry, ...prev].slice(0, 60)); // keep max 60
-        };
-        const interval = setInterval(tick, 4000 + Math.random() * 3000);
+        async function fetchMonitor() {
+            if (paused) return;
+            try {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/dashboard/monitor`);
+                if (!response.ok) {
+                    console.error(`Monitor fetch error: ${response.status} ${response.statusText}`);
+                    throw new Error(`Failed to fetch: ${response.status}`);
+                }
+                const data = await response.json();
+                
+                if (data.traces && data.traces.length > 0) {
+                    setFeed(data.traces);
+                }
+                setStats({
+                    active_policies: data.active_policies,
+                    traces_per_min: data.traces_per_min,
+                    blocking_rate: data.blocking_rate,
+                    avg_latency: data.avg_latency || 124
+                });
+            } catch (err) {
+                console.error("Monitor fetch error:", err);
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchMonitor();
+        const interval = setInterval(fetchMonitor, 3000); 
         return () => clearInterval(interval);
-    }, []);
+    }, [paused]);
 
     const filtered = filter === 'ALL' ? feed : feed.filter(e => e.status === filter.toLowerCase());
-    const blocked = feed.filter(e => e.status === 'block').length;
-    const warned = feed.filter(e => e.status === 'warn').length;
-    const passed = feed.filter(e => e.status === 'pass').length;
+    const blocked = feed.filter(e => e.status.toLowerCase() === 'block').length;
+    const warned = feed.filter(e => e.status.toLowerCase() === 'warn').length;
+    const passed = feed.filter(e => e.status.toLowerCase() === 'pass').length;
 
     return (
         <div className="space-y-6 pb-16">
@@ -115,9 +129,9 @@ export default function MonitorPage() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {[
                     { label: 'Blocked', value: blocked, icon: XCircle, color: 'text-red-400', glow: 'rgba(239,68,68,0.1)' },
-                    { label: 'Warnings', value: warned, icon: AlertTriangle, color: 'text-amber-400', glow: 'rgba(245,158,11,0.1)' },
-                    { label: 'Passed', value: passed, icon: CheckCircle2, color: 'text-[#1aff8c]', glow: 'rgba(26,255,140,0.1)' },
-                    { label: 'Total Entries', value: feed.length, icon: Database, color: 'text-blue-400', glow: 'rgba(59,130,246,0.1)' },
+                    { label: 'Blocking Rate', value: `${stats.blocking_rate}%`, icon: AlertTriangle, color: 'text-amber-400', glow: 'rgba(245,158,11,0.1)' },
+                    { label: 'Traces/min', value: stats.traces_per_min, icon: Activity, color: 'text-[#1aff8c]', glow: 'rgba(26,255,140,0.1)' },
+                    { label: 'Active Rules', value: stats.active_policies, icon: ShieldCheck, color: 'text-blue-400', glow: 'rgba(59,130,246,0.1)' },
                 ].map((k, i) => (
                     <div key={i} className="glass-card rounded-xl p-4" style={{ boxShadow: `0 0 16px ${k.glow}` }}>
                         <div className="flex items-center justify-between mb-2">

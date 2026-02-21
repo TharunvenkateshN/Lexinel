@@ -39,7 +39,7 @@ export function PolicyUploadPanel({ onUpload, onPolicyCreated }: PolicyUploadPan
         formData.append('file', file);
 
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:7860';
 
             const res = await fetch(`${apiUrl}/api/v1/policies/upload`, {
                 method: 'POST',
@@ -71,7 +71,7 @@ export function PolicyUploadPanel({ onUpload, onPolicyCreated }: PolicyUploadPan
     const handleSamplePolicy = async () => {
         setUploading(true);
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:7860';
             // Simulate upload latency for "AI Analysis" effect
             await new Promise(r => setTimeout(r, 1000));
 

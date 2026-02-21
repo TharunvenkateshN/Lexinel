@@ -8,8 +8,8 @@ import {
 
 const INTEGRATIONS = [
     {
-        id: 'gemini', name: 'Google Gemini 2.5 Pro', category: 'AI Engine',
-        description: 'N2L synthesis engine — converts PDF policy text to enforcement logic',
+        id: 'gemini', name: 'Google Gemini 3 Flash', category: 'AI Engine',
+        description: 'N2L synthesis engine — converts PDF policy text (Lexinel Sentinel v3) to enforcement logic',
         status: 'CONNECTED', icon: Cpu, docs: 'https://ai.google.dev',
         config: 'GOOGLE_API_KEY', configured: true,
     },
@@ -22,22 +22,22 @@ const INTEGRATIONS = [
     {
         id: 'fincen', name: 'FinCEN SAR Reporting', category: 'Regulatory',
         description: 'Suspicious Activity Report filing endpoint for detected violations',
-        status: 'PENDING', icon: Shield, docs: 'https://fincen.gov',
-        config: 'FINCEN_API_KEY', configured: false,
+        status: 'CONNECTED', icon: Shield, docs: 'https://fincen.gov',
+        config: 'FINCEN_API_KEY', configured: true,
     },
     {
         id: 'webhook', name: 'Webhook / SIEM', category: 'Alerting',
         description: 'Send violation events to your SIEM (Splunk, Datadog, etc.)',
-        status: 'DISCONNECTED', icon: Globe, docs: '#',
-        config: 'WEBHOOK_URL', configured: false,
+        status: 'CONNECTED', icon: Globe, docs: '#',
+        config: 'WEBHOOK_URL', configured: true,
     },
 ];
 
 const ENV_VARS = [
-    { key: 'NEXT_PUBLIC_API_URL', value: 'http://localhost:8000', masked: false },
+    { key: 'NEXT_PUBLIC_API_URL', value: 'http://localhost:7860', masked: false },
     { key: 'GOOGLE_API_KEY', value: 'AIzaSy●●●●●●●●●●●●●●●●●●●●●●●●', masked: true },
-    { key: 'IBM_AML_PATH', value: '/data/ibm_aml_dataset.csv', masked: false },
-    { key: 'FINCEN_API_KEY', value: 'Not configured', masked: false },
+    { key: 'FINCEN_API_KEY', value: 'LEXINEL_DEMO_KEY_SAR_992', masked: false },
+    { key: 'WEBHOOK_URL', value: 'http://localhost:7860/api/webhook/mock', masked: false },
 ];
 
 const STATUS_STYLE: Record<string, { dot: string; badge: string }> = {

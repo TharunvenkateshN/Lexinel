@@ -54,14 +54,16 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 from api.routes import router as api_router
 from api.proxy import router as proxy_router
+from api.sentinel import router as sentinel_router
 from services.storage import policy_db
 from services.metrics import metrics_store
 
 # Attach DB to metrics after both are initialized to avoid circular imports
 metrics_store.set_db(policy_db.db)
 
-app.include_router(api_router, prefix="/api/v1")
+app.include_router(api_router, prefix="/api")
 app.include_router(proxy_router)
+app.include_router(sentinel_router, prefix="/api/sentinel")
 
 @app.get("/")
 async def root():

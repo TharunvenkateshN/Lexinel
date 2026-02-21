@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     AlertOctagon, Shield, CheckCircle2, Lock, Users,
     RefreshCw, X, Eye, ArrowRight, TrendingUp, Cpu,
@@ -49,12 +49,92 @@ const ACTION_LOG = [
 ];
 
 export default function RemediatePage() {
-    const [selectedViolation, setSelectedViolation] = useState<typeof VIOLATION_QUEUE[0] | null>(null);
+    const [selectedViolation, setSelectedViolation] = useState<any | null>(null);
     const [actionTaken, setActionTaken] = useState<Record<string, string>>({});
+    const [violations, setViolations] = useState<any[]>(VIOLATION_QUEUE);
+    const [loading, setLoading] = useState(true);
 
-    const takeAction = (violationId: string, action: string) => {
-        setActionTaken(prev => ({ ...prev, [violationId]: action }));
-        setSelectedViolation(null);
+    useEffect(() => {
+        async function fetchViolations() {
+            try {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/sentinel/violations`);
+                if (!response.ok) {
+                    console.error(`Violations fetch error: ${response.status} ${response.statusText}`);
+                    throw new Error(`Failed to fetch: ${response.status}`);
+                }
+                const data = await response.json();
+                
+                if (data && data.length > 0) {
+                    // Map backend data to local view model
+                    const mapped = data.map((v: any) => ({
+                        id: v.transaction_id || v.id,
+                        txn: v.transaction_id,
+                        severity: v.risk_score > 80 ? 'CRITICAL' : v.risk_score > 50 ? 'HIGH' : 'MEDIUM',
+                        rule: v.detections?.[0]?.rule_id || 'AML-RULE',
+                        amount: v.amount || 0,
+                        type: v.type || 'TRANSFER',
+                        jurisdiction: v.jurisdiction || 'Unknown',
+                        timestamp: v.timestamp || 'Just Now',
+                        explanation: v.evidence_summary || 'No explanation available.',
+                        counterfactual: 'Investigation required to determine compliant path.',
+                        status: 'PENDING_REVIEW'
+                    }));
+                    setViolations(mapped);
+                }
+            } catch (err) {
+                console.error("Violation fetch error:", err);
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchViolations();
+        const interval = setInterval(fetchViolations, 5000); // Poll every 5s
+        return () => clearInterval(interval);
+    }, []);
+
+    const takeAction = async (violation: any, action: string) => {
+        if (action === 'FROZEN') {
+            try {
+                await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/system/freeze`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ frozen: true, account: violation.id })
+                });
+            } catch (e) { console.error(e); }
+        }
+        
+        if (action === 'HUMAN_REVIEW' || action === 'FROZEN') {
+            try {
+                await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/sentinel/resolve`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: violation.id })
+                });
+            } catch (e) { console.error(e); }
+        }
+        
+        if (action === 'SAR_FILED') {
+            try {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/sentinel/sar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(violation)
+                });
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `SAR_${violation.id}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        setActionTaken(prev => ({ ...prev, [violation.id]: action }));
+        if (action !== 'SAR_FILED') setSelectedViolation(null);
     };
 
     const severityColor = (s: string) => ({
@@ -81,7 +161,7 @@ export default function RemediatePage() {
                     </div>
                     <span className="ml-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-950/40 border border-red-800/40 text-red-400">
                         <AlertOctagon className="w-3 h-3" />
-                        {VIOLATION_QUEUE.filter(v => !actionTaken[v.id]).length} Active
+                        {violations.filter(v => !actionTaken[v.id]).length} Active
                     </span>
                 </div>
                 <p className="text-[rgba(255,255,255,0.4)] text-sm">
@@ -93,7 +173,7 @@ export default function RemediatePage() {
                 {/* Violation Queue */}
                 <div className="space-y-3">
                     <h2 className="text-xs font-bold text-red-400/80 uppercase tracking-widest">Violation Queue</h2>
-                    {VIOLATION_QUEUE.map(v => (
+                    {violations.map(v => (
                         <button
                             key={v.id}
                             onClick={() => setSelectedViolation(v)}
@@ -163,24 +243,26 @@ export default function RemediatePage() {
 
                                 {/* Action Buttons */}
                                 {!actionTaken[selectedViolation.id] ? (
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <div className="flex flex-col gap-3">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                           <button
+                                               onClick={() => takeAction(selectedViolation, 'HUMAN_REVIEW')}
+                                               className="flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-bold text-[#070c0a] bg-[#1aff8c] hover:opacity-90 transition-all shadow-[0_4px_20px_rgba(26,255,140,0.2)]"
+                                           >
+                                               <Shield className="w-4 h-4" /> Send to Human Review
+                                           </button>
+                                           <button
+                                               onClick={() => takeAction(selectedViolation, 'FROZEN')}
+                                               className="flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-bold text-red-400 border border-red-950 bg-[#120505] hover:bg-[#1a0808] transition-all"
+                                           >
+                                               <Lock className="w-4 h-4" /> Freeze Account
+                                           </button>
+                                        </div>
                                         <button
-                                            onClick={() => takeAction(selectedViolation.id, 'APPROVED')}
-                                            className="flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold text-[#070c0a] bg-[#1aff8c] hover:bg-[#0de87a] transition-all"
+                                            onClick={() => takeAction(selectedViolation, 'SAR_FILED')}
+                                            className="flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-bold text-[#1aff8c] border-2 border-[#1aff8c] bg-transparent hover:bg-[#1aff8c]/5 transition-all"
                                         >
-                                            <CheckCircle2 className="w-4 h-4" /> Approve & Clear
-                                        </button>
-                                        <button
-                                            onClick={() => takeAction(selectedViolation.id, 'FROZEN')}
-                                            className="flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold text-red-400 border border-red-800/40 bg-red-950/20 hover:bg-red-950/40 transition-all"
-                                        >
-                                            <Lock className="w-4 h-4" /> Freeze Account
-                                        </button>
-                                        <button
-                                            onClick={() => takeAction(selectedViolation.id, 'SAR_FILED')}
-                                            className="flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold text-amber-400 border border-amber-800/40 bg-amber-950/20 hover:bg-amber-950/40 transition-all"
-                                        >
-                                            <FileText className="w-4 h-4" /> File SAR
+                                            <FileText className="w-4 h-4" /> Draft SAR (AI Forensics Narrative)
                                         </button>
                                     </div>
                                 ) : (
