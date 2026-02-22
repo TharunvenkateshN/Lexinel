@@ -30,8 +30,9 @@ if not origins:
         "http://127.0.0.1:3001",
         "http://localhost:8888",
         "http://127.0.0.1:8888",
+        "https://lexinel.vercel.app",
+        "https://lexinel.onrender.com",
     ]
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
