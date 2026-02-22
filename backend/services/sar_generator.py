@@ -70,7 +70,27 @@ class SARGenerator:
         pdf.set_font("Arial", "B", 12)
         pdf.cell(0, 10, "III. CHRONOLOGICAL NARRATIVE", 0, 1)
         pdf.set_font("Arial", "", 10)
-        pdf.multi_cell(0, 6, narrative)
+        
+        # Simple Markdown Bold Parser for FPDF
+        for line in narrative.split('\n'):
+            if not line.strip():
+                pdf.ln(4)
+                continue
+            
+            # Split by ** to get alternating normal/bold segments
+            parts = line.split("**")
+            for i, part in enumerate(parts):
+                if not part: continue
+                # Even indices are normal, odd indices are bold
+                if i % 2 == 1:
+                    pdf.set_font("Arial", "B", 10)
+                else:
+                    pdf.set_font("Arial", "", 10)
+                
+                # Write string segment (multi_cell doesn't flow inline well, so we use write for inline formatting)
+                part = part.replace("*", "") # Strip remaining single asterisks
+                pdf.write(6, part)
+            pdf.ln(6) # Newline after each paragraph
         
         pdf.ln(10)
         
