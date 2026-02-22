@@ -6,7 +6,7 @@ import {
     ShieldCheck, Activity, Zap, AlertTriangle, TrendingUp,
     Database, FileText, GitBranch, Flame, Download,
     Bell, BellOff, Sun, Moon, ArrowUp, ArrowDown,
-    CheckCircle2, XCircle, Clock, Globe, Cpu
+    CheckCircle2, XCircle, Clock, Globe, Cpu, Terminal, ArrowRight
 } from 'lucide-react';
 import {
     AreaChart, Area, BarChart, Bar, XAxis, YAxis,
@@ -280,42 +280,164 @@ export default function OverviewPage() {
 
             {/* ── OVERVIEW TAB ───────────────────────────────────── */}
             {activeTab === 'Overview' && (
-                <>
-                    {/* Quick links */}
-                    <div>
-                        <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">Quick Navigation</p>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                            {QUICK_LINKS.map((q, i) => (
-                                <Link key={i} href={q.href}
-                                    className="glass-card rounded-xl p-3.5 flex flex-col gap-2 hover:border-[rgba(26,255,140,0.25)] transition-all group">
-                                    <q.icon className={`w-5 h-5 ${q.color} group-hover:scale-110 transition-transform`} />
-                                    <div>
-                                        <p className="text-sm font-bold text-foreground leading-tight">{q.label}</p>
-                                        <p className="text-[10px] text-muted-foreground mt-0.5">{q.desc}</p>
+                <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                    {/* Left Column: Framework & Radar (Auditor Focus) */}
+                    <div className="xl:col-span-8 space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Radar Chart: Framework Coverage */}
+                            <div className="glass-card rounded-2xl p-6 border border-[rgba(26,255,140,0.1)] relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                    <ShieldCheck className="w-24 h-24 text-[#1aff8c]" />
+                                </div>
+                                <h3 className="text-sm font-black text-foreground uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                                    <Globe className="w-4 h-4 text-[#1aff8c]" /> Framework Resilience
+                                </h3>
+                                <div className="h-[240px] w-full">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={[
+                                            { name: 'BSA', score: 94, full: 100 },
+                                            { name: 'FATF', score: 88, full: 100 },
+                                            { name: 'EU-AMLD', score: 91, full: 100 },
+                                            { name: 'GDPR', score: 82, full: 100 },
+                                            { name: 'FinCEN', score: 96, full: 100 },
+                                        ]} layout="vertical" margin={{ left: -20 }}>
+                                            <XAxis type="number" hide domain={[0, 100]} />
+                                            <YAxis dataKey="name" type="category" tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10, fontWeight: 'bold' }} axisLine={false} tickLine={false} />
+                                            <Tooltip cursor={{ fill: 'transparent' }} contentStyle={TOOLTIP_STYLE} />
+                                            <Bar dataKey="score" radius={[0, 4, 4, 0]} barSize={12}>
+                                                {[94, 88, 91, 82, 96].map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#1aff8c' : 'rgba(26,255,140,0.4)'} />
+                                                ))}
+                                            </Bar>
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                                <p className="text-[10px] text-muted-foreground mt-4 leading-relaxed font-mono uppercase tracking-widest">
+                                    &gt; Governance Engine mapping status across global regulatory standards.
+                                </p>
+                            </div>
+
+                            {/* Center Summary: Violation Heatmap Sparkline */}
+                            <div className="glass-card rounded-2xl p-6 border border-[rgba(26,255,140,0.1)]">
+                                <h3 className="text-sm font-black text-foreground uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                                    <Activity className="w-4 h-4 text-blue-400" /> Audit Pulse (24h)
+                                </h3>
+                                <div className="h-[140px] w-full">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <AreaChart data={AREA_DATA}>
+                                            <defs>
+                                                <linearGradient id="auditor_fg" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#1aff8c" stopOpacity={0.2} />
+                                                    <stop offset="95%" stopColor="#1aff8c" stopOpacity={0} />
+                                                </linearGradient>
+                                            </defs>
+                                            <Area type="monotone" dataKey="flagged" stroke="#1aff8c" fill="url(#auditor_fg)" strokeWidth={3} />
+                                            <Tooltip contentStyle={TOOLTIP_STYLE} />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4 mt-6">
+                                    <div className="p-3 rounded-xl bg-white/5 border border-white/5">
+                                        <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Total Flags</p>
+                                        <p className="text-xl font-bold text-foreground">1,204</p>
                                     </div>
-                                </Link>
-                            ))}
+                                    <div className="p-3 rounded-xl bg-white/5 border border-white/5">
+                                        <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">False Positives</p>
+                                        <p className="text-xl font-bold text-blue-400">0.4%</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Audit Feed (Live) - Integrated into Overview */}
+                        <div className="glass-card rounded-2xl overflow-hidden border border-[rgba(26,255,140,0.1)]">
+                            <div className="flex items-center justify-between px-6 py-4 bg-[#070c0a] border-b border-[rgba(26,255,140,0.08)]">
+                                <h3 className="text-sm font-black text-foreground uppercase tracking-[0.2em] flex items-center gap-2">
+                                    <Terminal className="w-4 h-4 text-[#1aff8c]" /> Real-time Enforcement Stream
+                                </h3>
+                                <div className="flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-[#1aff8c] animate-pulse" />
+                                    <span className="text-[9px] font-black text-[#1aff8c] tracking-widest">LIVE TRAFFIC</span>
+                                </div>
+                            </div>
+                            <div className="bg-[#030806] font-mono text-[11px] h-[300px] overflow-y-auto custom-scrollbar p-1">
+                                {liveFeed.length === 0 ? (
+                                    <div className="p-6 text-muted-foreground font-mono">Initializing sentinel stream...</div>
+                                ) : (
+                                    liveFeed.map((e, idx) => (
+                                        <div key={idx} className="flex items-center gap-4 px-5 py-2 hover:bg-white/5 transition-colors border-b border-white/[0.02]">
+                                            <span className="text-muted-foreground opacity-40 shrink-0">{e.time}</span>
+                                            <span className={`shrink-0 font-black ${LEVEL_STYLE[e.level]}`}>{LEVEL_PREFIX[e.level]}</span>
+                                            <span className={`truncate ${e.level === 'error' ? 'text-white' : 'text-zinc-400'}`}>{e.msg}</span>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
                         </div>
                     </div>
 
-                    {/* System status */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {[
-                            { label: 'N2L Engine', status: systemOnline ? 'ONLINE' : 'OFFLINE', icon: Cpu },
-                            { label: 'IBM AML Dataset', status: systemOnline ? 'ONLINE' : 'OFFLINE', icon: Database },
-                            { label: 'Gemini AI Model', status: systemOnline ? 'ONLINE' : 'OFFLINE', icon: GitBranch },
-                            { label: 'FinCEN SAR API', status: 'PENDING', icon: Globe },
-                        ].map((s, i) => (
-                            <div key={i} className="glass-card rounded-xl p-4 flex items-center gap-3">
-                                <div className={`w-2 h-2 rounded-full flex-shrink-0 ${s.status === 'ONLINE' ? 'bg-[#1aff8c] shadow-[0_0_6px_#1aff8c] animate-pulse' : s.status === 'OFFLINE' ? 'bg-red-500' : 'bg-amber-400 shadow-[0_0_6px_rgba(245,158,11,0.6)]'}`} />
-                                <div>
-                                    <p className="text-sm font-semibold text-foreground">{s.label}</p>
-                                    <p className={`text-[10px] font-bold uppercase tracking-widest ${s.status === 'ONLINE' ? 'text-[#1aff8c]' : s.status === 'OFFLINE' ? 'text-red-400' : 'text-amber-400'}`}>{s.status}</p>
+                    {/* Right Column: Risk Distribution & Quick Nav */}
+                    <div className="xl:col-span-4 space-y-6">
+                        {/* Risk Dist (Pie Chart) */}
+                        <div className="glass-card rounded-2xl p-6 border border-[rgba(26,255,140,0.1)]">
+                            <h3 className="text-sm font-black text-foreground uppercase tracking-[0.2em] mb-6">Violation Diversity</h3>
+                            <div className="h-[200px] relative">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie data={violationDist} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={5} dataKey="value">
+                                            {violationDist.map((e, i) => <Cell key={i} fill={e.color} />)}
+                                        </Pie>
+                                        <Tooltip contentStyle={TOOLTIP_STYLE} />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                    <p className="text-xs text-muted-foreground uppercase font-black">Risk</p>
+                                    <p className="text-xl font-black text-white">88%</p>
                                 </div>
                             </div>
-                        ))}
+                            <div className="mt-6 space-y-2">
+                                {violationDist.map((v, i) => (
+                                    <div key={i} className="flex items-center justify-between text-[11px]">
+                                        <span className="flex items-center gap-2">
+                                            <span className="w-1.5 h-1.5 rounded-full" style={{ background: v.color }} />
+                                            <span className="text-muted-foreground uppercase font-bold tracking-tight">{v.name}</span>
+                                        </span>
+                                        <span className="text-foreground font-black">{v.value}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Navigation Shortcuts */}
+                        <div className="space-y-3">
+                            <p className="text-[10px] text-muted-foreground uppercase font-black tracking-[0.3em] ml-1">Enforcement Hub</p>
+                            <div className="grid grid-cols-1 gap-2">
+                                {QUICK_LINKS.slice(0, 4).map((q, i) => (
+                                    <Link key={i} href={q.href}
+                                        className="flex items-center gap-3 p-4 rounded-xl bg-[rgba(255,255,255,0.02)] border border-white/[0.05] hover:border-[rgba(26,255,140,0.3)] hover:bg-[rgba(26,255,140,0.04)] transition-all group">
+                                        <div className={`p-2 rounded-lg bg-black/40 ${q.color}`}>
+                                            <q.icon className="w-4 h-4" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-black text-white uppercase tracking-wider">{q.label}</p>
+                                            <p className="text-[10px] text-muted-foreground">{q.desc}</p>
+                                        </div>
+                                        <ArrowRight className="w-3 h-3 text-muted-foreground ml-auto group-hover:text-[#1aff8c] transition-colors" />
+                                    </Link>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* System Online Badge */}
+                        <div className="p-4 rounded-xl bg-[rgba(26,255,140,0.05)] border border-[rgba(26,255,140,0.1)] flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <span className={`w-2 h-2 rounded-full ${systemOnline ? 'bg-[#1aff8c]' : 'bg-red-500'} animate-pulse`} />
+                                <span className="text-[10px] font-black uppercase tracking-widest text-[#1aff8c]">Governance Core Active</span>
+                            </div>
+                            <Zap className="w-4 h-4 text-[#1aff8c]" />
+                        </div>
                     </div>
-                </>
+                </div>
             )}
 
             {/* ── ANALYTICS TAB ──────────────────────────────────── */}
