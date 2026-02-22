@@ -106,7 +106,8 @@ const TOUR_STEPS = [
         desc: "Finally, Lexinel is conversational. Ask complex compliance questions, and the AI will respond using only the exact policy context you've uploaded (RAG). Compliance, at the speed of thought.",
         icon: Brain,
         color: "text-purple-400",
-        bg: "bg-purple-500/10"
+        bg: "bg-purple-500/10",
+        actionBtn: "Finish Tour"
     }
 ];
 
