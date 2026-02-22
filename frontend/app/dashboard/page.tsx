@@ -6,7 +6,8 @@ import {
     ShieldCheck, Activity, Zap, AlertTriangle, TrendingUp,
     Database, FileText, GitBranch, Flame, Download,
     Bell, BellOff, Sun, Moon, ArrowUp, ArrowDown,
-    CheckCircle2, XCircle, Clock, Globe, Cpu, Terminal, ArrowRight
+    CheckCircle2, XCircle, Clock, Globe, Cpu, Terminal, ArrowRight,
+    Network, Settings, AlertCircle, Fingerprint
 } from 'lucide-react';
 import {
     AreaChart, Area, BarChart, Bar, XAxis, YAxis,
@@ -278,164 +279,191 @@ export default function OverviewPage() {
                 ))}
             </div>
 
-            {/* ── OVERVIEW TAB ───────────────────────────────────── */}
+            {/* ── OVERVIEW TAB (THE CONTROL ROOM) ─────────────────────────── */}
             {activeTab === 'Overview' && (
-                <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-                    {/* Left Column: Framework & Radar (Auditor Focus) */}
-                    <div className="xl:col-span-8 space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* Radar Chart: Framework Coverage */}
-                            <div className="glass-card rounded-2xl p-6 border border-[rgba(26,255,140,0.1)] relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                                    <ShieldCheck className="w-24 h-24 text-[#1aff8c]" />
-                                </div>
-                                <h3 className="text-sm font-black text-foreground uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-                                    <Globe className="w-4 h-4 text-[#1aff8c]" /> Framework Resilience
-                                </h3>
-                                <div className="h-[240px] w-full">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={[
-                                            { name: 'BSA', score: 94, full: 100 },
-                                            { name: 'FATF', score: 88, full: 100 },
-                                            { name: 'EU-AMLD', score: 91, full: 100 },
-                                            { name: 'GDPR', score: 82, full: 100 },
-                                            { name: 'FinCEN', score: 96, full: 100 },
-                                        ]} layout="vertical" margin={{ left: -20 }}>
-                                            <XAxis type="number" hide domain={[0, 100]} />
-                                            <YAxis dataKey="name" type="category" tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10, fontWeight: 'bold' }} axisLine={false} tickLine={false} />
-                                            <Tooltip cursor={{ fill: 'transparent' }} contentStyle={TOOLTIP_STYLE} />
-                                            <Bar dataKey="score" radius={[0, 4, 4, 0]} barSize={12}>
-                                                {[94, 88, 91, 82, 96].map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#1aff8c' : 'rgba(26,255,140,0.4)'} />
-                                                ))}
-                                            </Bar>
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </div>
-                                <p className="text-[10px] text-muted-foreground mt-4 leading-relaxed font-mono uppercase tracking-widest">
-                                    &gt; Governance Engine mapping status across global regulatory standards.
-                                </p>
+                <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+
+                    {/* LEFT: Governance Nexus (Lineage Flow) */}
+                    <div className="xl:col-span-8 space-y-8">
+
+                        {/* 1. The Governance Nexus - NEW CONCEPT */}
+                        <div className="glass-card rounded-2xl p-8 border border-[rgba(26,255,140,0.15)] relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-6 opacity-[0.03] pointer-events-none">
+                                <Network className="w-64 h-64 text-[#1aff8c]" />
                             </div>
 
-                            {/* Center Summary: Violation Heatmap Sparkline */}
-                            <div className="glass-card rounded-2xl p-6 border border-[rgba(26,255,140,0.1)]">
-                                <h3 className="text-sm font-black text-foreground uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-                                    <Activity className="w-4 h-4 text-blue-400" /> Audit Pulse (24h)
-                                </h3>
-                                <div className="h-[140px] w-full">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <AreaChart data={AREA_DATA}>
-                                            <defs>
-                                                <linearGradient id="auditor_fg" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="5%" stopColor="#1aff8c" stopOpacity={0.2} />
-                                                    <stop offset="95%" stopColor="#1aff8c" stopOpacity={0} />
-                                                </linearGradient>
-                                            </defs>
-                                            <Area type="monotone" dataKey="flagged" stroke="#1aff8c" fill="url(#auditor_fg)" strokeWidth={3} />
-                                            <Tooltip contentStyle={TOOLTIP_STYLE} />
-                                        </AreaChart>
-                                    </ResponsiveContainer>
+                            <div className="flex items-center justify-between mb-10">
+                                <div>
+                                    <h3 className="text-lg font-black text-white uppercase tracking-[0.2em]">Governance Nexus</h3>
+                                    <p className="text-xs text-muted-foreground font-mono mt-1">&gt; Neural-to-Logic (N2L) Lineage Flow</p>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4 mt-6">
-                                    <div className="p-3 rounded-xl bg-white/5 border border-white/5">
-                                        <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Total Flags</p>
-                                        <p className="text-xl font-bold text-foreground">1,204</p>
+                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[rgba(26,255,140,0.05)] border border-[rgba(26,255,140,0.2)]">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-[#1aff8c] animate-pulse" />
+                                    <span className="text-[10px] font-black text-[#1aff8c] uppercase tracking-widest">Enforcement Active</span>
+                                </div>
+                            </div>
+
+                            <div className="relative flex flex-col md:flex-row items-center justify-between gap-6 px-4">
+                                {/* Step 1: Ingest */}
+                                <div className="z-10 flex flex-col items-center gap-4 group w-full md:w-1/4">
+                                    <div className="w-16 h-16 rounded-2xl bg-[rgba(255,255,255,0.03)] border border-white/10 flex items-center justify-center group-hover:border-[rgba(26,255,140,0.5)] transition-all">
+                                        <FileText className="w-7 h-7 text-zinc-500 group-hover:text-[#1aff8c]" />
                                     </div>
-                                    <div className="p-3 rounded-xl bg-white/5 border border-white/5">
-                                        <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">False Positives</p>
-                                        <p className="text-xl font-bold text-blue-400">0.4%</p>
+                                    <div className="text-center">
+                                        <p className="text-[11px] font-black text-white uppercase tracking-wider">Regulatory Ingest</p>
+                                        <p className="text-[9px] text-muted-foreground mt-1">BSA / FATF / EU PDFS</p>
+                                    </div>
+                                </div>
+
+                                <div className="hidden md:block w-full h-px bg-gradient-to-r from-transparent via-[rgba(26,255,140,0.3)] to-transparent relative">
+                                    <div className="absolute top-1/2 left-0 -translate-y-1/2 w-2 h-2 rounded-full bg-[#1aff8c] animate-[move_3s_linear_infinite]" style={{ left: '0%' }} />
+                                </div>
+
+                                {/* Step 2: N2L Synthesis */}
+                                <div className="z-10 flex flex-col items-center gap-4 group w-full md:w-1/4">
+                                    <div className="w-20 h-20 rounded-full bg-[rgba(26,255,140,0.05)] border-2 border-[rgba(26,255,140,0.2)] flex items-center justify-center relative shadow-[0_0_30px_rgba(26,255,140,0.1)] group-hover:border-[#1aff8c] transition-all">
+                                        <Cpu className="w-8 h-8 text-[#1aff8c] animate-pulse" />
+                                        <div className="absolute inset-0 rounded-full border border-[#1aff8c] opacity-20 animate-ping" />
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-[11px] font-black text-white uppercase tracking-wider">N2L Synthesis</p>
+                                        <p className="text-[9px] text-[#1aff8c] mt-1 font-mono uppercase">Gemini 3 Pro Live</p>
+                                    </div>
+                                </div>
+
+                                <div className="hidden md:block w-full h-px bg-gradient-to-r from-transparent via-[rgba(26,255,140,0.3)] to-transparent" />
+
+                                {/* Step 3: Deployment */}
+                                <div className="z-10 flex flex-col items-center gap-4 group w-full md:w-1/4">
+                                    <div className="w-16 h-16 rounded-2xl bg-[rgba(255,255,255,0.03)] border border-white/10 flex items-center justify-center group-hover:border-[#3b82f6] transition-all">
+                                        <ShieldCheck className="w-7 h-7 text-zinc-500 group-hover:text-blue-400" />
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-[11px] font-black text-white uppercase tracking-wider">Policy Sentinel</p>
+                                        <p className="text-[9px] text-muted-foreground mt-1 font-mono">Real-time Blocking</p>
                                     </div>
                                 </div>
                             </div>
+
+                            <style jsx>{`
+                                @keyframes move {
+                                    0% { left: 0%; opacity: 0; }
+                                    10% { opacity: 1; }
+                                    90% { opacity: 1; }
+                                    100% { left: 100%; opacity: 0; }
+                                }
+                            `}</style>
                         </div>
 
-                        {/* Audit Feed (Live) - Integrated into Overview */}
-                        <div className="glass-card rounded-2xl overflow-hidden border border-[rgba(26,255,140,0.1)]">
-                            <div className="flex items-center justify-between px-6 py-4 bg-[#070c0a] border-b border-[rgba(26,255,140,0.08)]">
-                                <h3 className="text-sm font-black text-foreground uppercase tracking-[0.2em] flex items-center gap-2">
-                                    <Terminal className="w-4 h-4 text-[#1aff8c]" /> Real-time Enforcement Stream
+                        {/* 2. Audit Spotlight Card */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+                            <div className="glass-card rounded-2xl p-6 border border-red-500/20 bg-gradient-to-br from-[#070c0a] to-[#0d0707] relative overflow-hidden">
+                                <div className="absolute top-0 right-0 p-4 opacity-5">
+                                    <AlertCircle className="w-20 h-20 text-red-500" />
+                                </div>
+                                <h3 className="text-[10px] font-black text-red-400 uppercase tracking-[0.3em] mb-4 flex items-center gap-2">
+                                    <Flame className="w-3.5 h-3.5" /> High Risk Spotlight
                                 </h3>
-                                <div className="flex items-center gap-2">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-[#1aff8c] animate-pulse" />
-                                    <span className="text-[9px] font-black text-[#1aff8c] tracking-widest">LIVE TRAFFIC</span>
+                                <div className="space-y-4">
+                                    <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/10">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <p className="text-xs font-bold text-white tracking-widest uppercase">ACC-8912</p>
+                                            <span className="px-2 py-0.5 rounded bg-red-500 text-[8px] font-black text-white uppercase">Critical</span>
+                                        </div>
+                                        <p className="text-[11px] text-zinc-400 leading-relaxed mb-3">
+                                            Detect structuring pattern: <span className="text-red-300">$1,800 × 4</span> transactions within 6 hours. High correlation with CTR evasion.
+                                        </p>
+                                        <div className="flex items-center gap-3">
+                                            <Link href="/dashboard/remediate" className="text-[9px] font-black text-red-400 uppercase tracking-widest hover:text-red-300 flex items-center gap-1 transition-all">
+                                                Remediate <ArrowRight className="w-2.5 h-2.5" />
+                                            </Link>
+                                            <div className="h-3 w-px bg-white/10" />
+                                            <p className="text-[9px] font-mono text-zinc-600 tracking-widest">19:21:44 UTC</p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <div className="bg-[#030806] font-mono text-[11px] h-[300px] overflow-y-auto custom-scrollbar p-1">
-                                {liveFeed.length === 0 ? (
-                                    <div className="p-6 text-muted-foreground font-mono">Initializing sentinel stream...</div>
-                                ) : (
-                                    liveFeed.map((e, idx) => (
-                                        <div key={idx} className="flex items-center gap-4 px-5 py-2 hover:bg-white/5 transition-colors border-b border-white/[0.02]">
-                                            <span className="text-muted-foreground opacity-40 shrink-0">{e.time}</span>
-                                            <span className={`shrink-0 font-black ${LEVEL_STYLE[e.level]}`}>{LEVEL_PREFIX[e.level]}</span>
-                                            <span className={`truncate ${e.level === 'error' ? 'text-white' : 'text-zinc-400'}`}>{e.msg}</span>
+
+                            <div className="glass-card rounded-2xl p-6 border border-[rgba(26,255,140,0.1)] relative">
+                                <h3 className="text-[10px] font-black text-[#1aff8c] uppercase tracking-[0.3em] mb-4 flex items-center gap-2">
+                                    <Fingerprint className="w-3.5 h-3.5" /> Compliance Integrity
+                                </h3>
+                                <div className="space-y-3">
+                                    {[
+                                        { l: 'Zero-Trust Kernel', s: 'Active', c: 'text-[#1aff8c]' },
+                                        { l: 'PII MASKING (V3)', s: 'Enabled', c: 'text-blue-400' },
+                                        { l: 'Self-Healing Hook', s: 'Dormant', c: 'text-zinc-600' },
+                                        { l: 'Audit Log Chain', s: 'Verified', c: 'text-[#1aff8c]' },
+                                    ].map((row, i) => (
+                                        <div key={i} className="flex items-center justify-between border-b border-white/[0.03] pb-2 last:border-0 last:pb-0">
+                                            <span className="text-[10px] text-zinc-400 font-mono uppercase tracking-widest">{row.l}</span>
+                                            <span className={`text-[10px] font-black uppercase tracking-widest ${row.c}`}>{row.s}</span>
                                         </div>
-                                    ))
-                                )}
+                                    ))}
+                                </div>
+                                <div className="mt-6 pt-4 border-t border-white/[0.05]">
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-[9px] text-zinc-500 font-mono italic">Signature: LV-331-SENTINEL-X</p>
+                                        <CheckCircle2 className="w-3.5 h-3.5 text-[#1aff8c] opacity-40" />
+                                    </div>
+                                </div>
                             </div>
+
                         </div>
                     </div>
 
-                    {/* Right Column: Risk Distribution & Quick Nav */}
-                    <div className="xl:col-span-4 space-y-6">
-                        {/* Risk Dist (Pie Chart) */}
-                        <div className="glass-card rounded-2xl p-6 border border-[rgba(26,255,140,0.1)]">
-                            <h3 className="text-sm font-black text-foreground uppercase tracking-[0.2em] mb-6">Violation Diversity</h3>
-                            <div className="h-[200px] relative">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart>
-                                        <Pie data={violationDist} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={5} dataKey="value">
-                                            {violationDist.map((e, i) => <Cell key={i} fill={e.color} />)}
-                                        </Pie>
-                                        <Tooltip contentStyle={TOOLTIP_STYLE} />
-                                    </PieChart>
-                                </ResponsiveContainer>
-                                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                    <p className="text-xs text-muted-foreground uppercase font-black">Risk</p>
-                                    <p className="text-xl font-black text-white">88%</p>
-                                </div>
-                            </div>
-                            <div className="mt-6 space-y-2">
-                                {violationDist.map((v, i) => (
-                                    <div key={i} className="flex items-center justify-between text-[11px]">
-                                        <span className="flex items-center gap-2">
-                                            <span className="w-1.5 h-1.5 rounded-full" style={{ background: v.color }} />
-                                            <span className="text-muted-foreground uppercase font-bold tracking-tight">{v.name}</span>
-                                        </span>
-                                        <span className="text-foreground font-black">{v.value}</span>
+                    {/* RIGHT: Active Sentinels & Quick Controls */}
+                    <div className="xl:col-span-4 space-y-8">
+
+                        {/* 3. Live Control Panel */}
+                        <div className="glass-card rounded-2xl p-6 border border-[rgba(26,255,140,0.1)] h-full">
+                            <h3 className="text-sm font-black text-foreground uppercase tracking-[0.2em] mb-6 flex items-center justify-between">
+                                <span>Policy Control Grid</span>
+                                <Settings className="w-4 h-4 text-zinc-600" />
+                            </h3>
+
+                            <div className="space-y-3 mb-8">
+                                {[
+                                    { name: 'BSA CTR Sentinel', val: '99%', color: '#1aff8c', active: true },
+                                    { name: 'FATF Cross-Border', val: '84%', color: '#fbbf24', active: true },
+                                    { name: 'EU-AMLD Routing', val: '0%', color: '#52525b', active: false },
+                                    { name: 'GDPR PII Shield', val: '92%', color: '#3b82f6', active: true },
+                                ].map((ctrl, i) => (
+                                    <div key={ctrl.name} className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] group hover:border-[rgba(26,255,140,0.2)] transition-all">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <p className="text-[11px] font-black text-white uppercase tracking-wider">{ctrl.name}</p>
+                                            <div className={`w-8 h-4 rounded-full p-0.5 relative cursor-pointer ${ctrl.active ? 'bg-[#1aff8c]/20 border border-[#1aff8c]/30' : 'bg-zinc-800 border border-zinc-700'}`}>
+                                                <div className={`w-2.5 h-2.5 rounded-full transition-all ${ctrl.active ? 'bg-[#1aff8c] ml-auto' : 'bg-zinc-500 ml-0'}`} />
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
+                                                <div className="h-full rounded-full transition-all duration-1000" style={{ width: ctrl.val, backgroundColor: ctrl.color }} />
+                                            </div>
+                                            <span className="text-[9px] font-mono text-zinc-500 w-6 text-right">{ctrl.val}</span>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
-                        </div>
 
-                        {/* Navigation Shortcuts */}
-                        <div className="space-y-3">
-                            <p className="text-[10px] text-muted-foreground uppercase font-black tracking-[0.3em] ml-1">Enforcement Hub</p>
-                            <div className="grid grid-cols-1 gap-2">
-                                {QUICK_LINKS.slice(0, 4).map((q, i) => (
-                                    <Link key={i} href={q.href}
-                                        className="flex items-center gap-3 p-4 rounded-xl bg-[rgba(255,255,255,0.02)] border border-white/[0.05] hover:border-[rgba(26,255,140,0.3)] hover:bg-[rgba(26,255,140,0.04)] transition-all group">
-                                        <div className={`p-2 rounded-lg bg-black/40 ${q.color}`}>
-                                            <q.icon className="w-4 h-4" />
-                                        </div>
-                                        <div>
-                                            <p className="text-xs font-black text-white uppercase tracking-wider">{q.label}</p>
-                                            <p className="text-[10px] text-muted-foreground">{q.desc}</p>
-                                        </div>
-                                        <ArrowRight className="w-3 h-3 text-muted-foreground ml-auto group-hover:text-[#1aff8c] transition-colors" />
-                                    </Link>
-                                ))}
+                            <button className="w-full py-3 rounded-xl border border-[rgba(26,255,140,0.3)] bg-[rgba(26,255,140,0.04)] text-[10px] font-black text-[#1aff8c] uppercase tracking-[0.2em] hover:bg-[rgba(26,255,140,0.08)] transition-all">
+                                Initialize Global Re-Scan
+                            </button>
+
+                            <div className="mt-8 pt-6 border-t border-white/[0.05]">
+                                <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mb-4">Quick Links</p>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {QUICK_LINKS.slice(0, 4).map((q, i) => (
+                                        <Link key={i} href={q.href}
+                                            className="p-3 rounded-xl bg-black/40 border border-white/5 hover:border-[rgba(26,255,140,0.2)] transition-all flex items-center justify-center">
+                                            <q.icon className={`w-4 h-4 ${q.color}`} />
+                                        </Link>
+                                    ))}
+                                </div>
                             </div>
                         </div>
 
-                        {/* System Online Badge */}
-                        <div className="p-4 rounded-xl bg-[rgba(26,255,140,0.05)] border border-[rgba(26,255,140,0.1)] flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <span className={`w-2 h-2 rounded-full ${systemOnline ? 'bg-[#1aff8c]' : 'bg-red-500'} animate-pulse`} />
-                                <span className="text-[10px] font-black uppercase tracking-widest text-[#1aff8c]">Governance Core Active</span>
-                            </div>
-                            <Zap className="w-4 h-4 text-[#1aff8c]" />
-                        </div>
                     </div>
                 </div>
             )}
