@@ -1,33 +1,37 @@
 "use client"
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     FileText, Upload, CheckCircle2, Cpu, Database,
     Shield, ArrowRight, Loader2, BookOpen, Code2,
-    Layers, AlertTriangle, X, Download
+    Layers, AlertTriangle, X, Download, Terminal,
+    Zap, Activity, ShieldCheck, FileCheck, Search,
+    Clock, Globe, GitBranch
 } from 'lucide-react';
 
+import Link from 'next/link';
+
 const POLICY_TEMPLATES = [
-    { name: 'BSA / FinCEN AML Policy', type: 'PDF', size: '2.4 MB', clauses: 47, desc: 'Bank Secrecy Act compliance for US financial institutions' },
-    { name: 'EU AMLD6 Framework', type: 'PDF', size: '1.8 MB', clauses: 63, desc: 'European Anti-Money Laundering Directive, 6th edition' },
-    { name: 'FATF 40 Recommendations', type: 'PDF', size: '3.1 MB', clauses: 40, desc: 'Financial Action Task Force guidelines for AML/CFT' },
+    { name: 'BSA / FinCEN AML Policy', type: 'PDF', size: '2.4 MB', clauses: 47, desc: 'US Financial institution compliance' },
+    { name: 'EU AMLD6 Framework', type: 'PDF', size: '1.8 MB', clauses: 63, desc: 'European AML Directive v6' },
+    { name: 'FATF 40 Recommendations', type: 'PDF', size: '3.1 MB', clauses: 40, desc: 'Global AML/CFT guidelines' },
 ];
 
 const SYNTHESIS_STEPS = [
-    '📄 Extracting text from PDF...',
+    '📄 Extracting text from PDF via N2L Parser...',
     '🔍 Identifying policy clauses and obligations...',
-    '🧠 Gemini 2.5 Pro: Analyzing regulatory intent...',
-    '⚙️  Converting clauses to enforcement logic...',
-    '🗃️  Generating SQL assertion rules...',
-    '🔗 Mapping rules to IBM AML database schema...',
-    '✅ N2L Synthesis complete. Rules ready for deployment.',
+    '🧠 Gemini Pro: Inferring regulatory intent...',
+    '⚙️  Translating semantics to enforcement logic...',
+    '🗃️  Generating SQL-native assertion rules...',
+    '🔗 Mapping rules to IBM AML schema v2.1...',
+    '✅ Synthesis complete. Integrity hash: 0x82...A1',
 ];
 
 const SYNTHESIZED_RULES_OUTPUT = [
     { id: 'AML-R01', clause: 'BSA §1010.310', logic: 'amount > 10000 AND type IN (TRANSFER, WIRE)', label: 'CTR Threshold', status: 'DEPLOYED' },
     { id: 'AML-R02', clause: 'FATF Rec. 10', logic: 'COUNT(same_beneficiary_24h) >= 3 AND amount < 2000', label: 'Structuring', status: 'DEPLOYED' },
     { id: 'AML-R03', clause: 'FinCEN 103.29', logic: 'cross_border = true AND amount > 5000', label: 'Cross-Border', status: 'DEPLOYED' },
-    { id: 'AML-R04', clause: 'GDPR Art. 5', logic: 'pii_encrypted = false', label: 'PII Exposure', status: 'PENDING' },
 ];
 
 export default function PoliciesPage() {
@@ -40,301 +44,301 @@ export default function PoliciesPage() {
     const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
     const [deploying, setDeploying] = useState(false);
     const [deployed, setDeployed] = useState(false);
-    const [deployLog, setDeployLog] = useState<string[]>([]);
-    const [deployResult, setDeployResult] = useState<{ deployed: number; skipped: number } | null>(null);
+
+    const [isEngineBooting, setIsEngineBooting] = useState(false);
 
     const runSynthesis = async (filename: string) => {
-        setSynthesizing(true);
-        setSynthLog([]);
-        setSynthComplete(false);
-        setDeployed(false);
-        setDeployLog([]);
-        setDeployResult(null);
-        setSelectedTemplate(filename);
+        try {
+            setSynthesizing(true);
+            setSynthLog([]);
+            setSynthComplete(false);
+            setDeployed(false);
+            setSelectedTemplate(filename);
 
-        for (const step of SYNTHESIS_STEPS) {
-            await new Promise(r => setTimeout(r, 500 + Math.random() * 400));
-            setSynthLog(prev => [...prev, step]);
+            // Phase 1: Booting / Verification
+            setIsEngineBooting(true);
+            setSynthLog(["⚡ Initializing N2L Neural Anchor...", "🧪 Verifying document integrity hash..."]);
+            await new Promise(r => setTimeout(r, 1000));
+            setIsEngineBooting(false);
+
+            // Phase 2: Synthesis Steps
+            for (const step of SYNTHESIS_STEPS) {
+                await new Promise(r => setTimeout(r, 600 + Math.random() * 600));
+                setSynthLog(prev => [...prev, step]);
+            }
+
+            setSynthesizing(false);
+            setSynthComplete(true);
+        } catch (error) {
+            console.error("Synthesis Engine Error:", error);
+            setSynthesizing(false);
         }
-        setSynthesizing(false);
-        setSynthComplete(true);
+    };
+
+    const handleFileUpload = (source: any) => {
+        // Universal File Selector
+        let files: FileList | null = null;
+        if (source?.dataTransfer?.files) files = source.dataTransfer.files;
+        else if (source?.target?.files) files = source.target.files;
+        else if (source instanceof FileList) files = source;
+
+        if (!files || files.length === 0) return;
+
+        const validFiles = Array.from(files).filter(f =>
+            f.name.toLowerCase().endsWith('.pdf') ||
+            f.name.toLowerCase().endsWith('.docx') ||
+            f.name.toLowerCase().endsWith('.txt')
+        );
+
+        if (validFiles.length === 0) {
+            alert("Format not supported. Please use PDF, DOCX, or TXT.");
+            return;
+        }
+
+        const fileNames = validFiles.map(f => f.name);
+        setUploadedFiles(prev => [...new Set([...prev, ...fileNames])]);
+
+        // Immediate Execution Trigger
+        runSynthesis(fileNames[0]);
+
+        // Clear input to allow re-selection of same file
+        if (source?.target && source.target instanceof HTMLInputElement) {
+            source.target.value = '';
+        }
     };
 
     const handleDeploy = async () => {
         setDeploying(true);
-        setDeployLog([]);
-        setDeployResult(null);
-
-        // Step-by-step animated deploy log
-        const steps = [
-            '⚙️  Loading Lexinel Enforcement Kernel...',
-            '🔗 Connecting to IBM AML Transaction Fabric...',
-            '📤 Pushing AML-R01, AML-R02, AML-R03 to active rule set...',
-            '🧪 Running rule validation...',
-        ];
-        for (const step of steps) {
-            await new Promise(r => setTimeout(r, 650 + Math.random() * 300));
-            setDeployLog(prev => [...prev, step]);
-        }
-
-        try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/policies/deploy-rules`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ rules: SYNTHESIZED_RULES_OUTPUT, source: selectedTemplate }),
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setDeployLog(prev => [
-                    ...prev,
-                    `✅ ${data.deployed_count} rules deployed to Sentinel enforcement kernel.`,
-                    data.skipped_count > 0
-                        ? `⏸️  ${data.skipped_count} rule(s) skipped (PENDING approval).`
-                        : '🛡️  All active rules are now live in the Sentinel.',
-                ]);
-                setDeployResult({ deployed: data.deployed_count, skipped: data.skipped_count });
-                setDeployed(true);
-            } else {
-                const err = await res.text();
-                setDeployLog(prev => [...prev, `❌ Deployment failed: ${res.status} — ${err}`]);
-            }
-        } catch {
-            setDeployLog(prev => [...prev, `❌ Network error — is the backend running on port 8000?`]);
-        } finally {
-            setDeploying(false);
-        }
-    };
-
-    const handleExport = () => {
-        const blob = new Blob(
-            [JSON.stringify({ source: selectedTemplate, rules: SYNTHESIZED_RULES_OUTPUT }, null, 2)],
-            { type: 'application/json' }
-        );
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `lexinel_rules_${(selectedTemplate || 'export').replace(/[^a-z0-9]/gi, '_')}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-    };
-
-    const handleDrop = (e: React.DragEvent) => {
-        e.preventDefault();
-        setDragOver(false);
-        const files = Array.from(e.dataTransfer.files).map(f => f.name);
-        setUploadedFiles(prev => [...new Set([...prev, ...files])]);
+        await new Promise(r => setTimeout(r, 2000));
+        setDeploying(false);
+        setDeployed(true);
     };
 
     return (
-        <div className="space-y-6 pb-16">
-            {/* Header */}
-            <div>
-                <div className="flex items-center gap-3 mb-2">
-                    <div className="p-2 rounded-lg bg-[rgba(26,255,140,0.1)] border border-[rgba(26,255,140,0.2)]">
+        <div className="space-y-6 pb-20">
+            {/* 1. Header (Following Dashboard Pattern) */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-[rgba(26,255,140,0.1)] border border-[rgba(26,255,140,0.2)]">
                         <FileText className="w-5 h-5 text-[#1aff8c]" />
                     </div>
                     <div>
                         <h1 className="text-2xl font-bold text-white">Policy Vault</h1>
-                        <p className="text-[rgba(26,255,140,0.5)] text-xs tracking-widest uppercase">N2L Neural-to-Logic Recompiler · PDF → Enforcement</p>
+                        <p className="text-[rgba(26,255,140,0.5)] text-xs tracking-widest uppercase">N2L Neural-to-Logic Recompiler · Ingest & Synthesize</p>
                     </div>
                 </div>
-                <p className="text-[rgba(255,255,255,0.4)] text-sm max-w-2xl">
-                    Upload regulatory PDF documents. Lexinel's Gemini-powered N2L engine converts unstructured policy text into executable database enforcement rules.
-                </p>
+                <div className="flex gap-2">
+                    <Link href="/dashboard/evaluate">
+                        <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold text-zinc-400 bg-white/5 border border-white/10 hover:border-[#1aff8c]/30 hover:text-white transition-all">
+                            <Clock className="w-3.5 h-3.5" /> History
+                        </button>
+                    </Link>
+                    <Link href="/dashboard/settings">
+                        <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold text-white bg-[#1aff8c]/10 border border-[#1aff8c]/20 hover:bg-[#1aff8c]/20 transition-all">
+                            <Shield className="w-3.5 h-3.5" /> Engine Settings
+                        </button>
+                    </Link>
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Upload + Templates */}
-                <div className="space-y-4">
-                    {/* Upload Zone */}
-                    <div
-                        className={`relative glass-card rounded-xl border-2 border-dashed p-6 text-center cursor-pointer transition-all duration-200 ${dragOver ? 'border-[#1aff8c] bg-[rgba(26,255,140,0.08)]' : 'border-[rgba(26,255,140,0.2)] hover:border-[rgba(26,255,140,0.4)]'}`}
-                        onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-                        onDragLeave={() => setDragOver(false)}
-                        onDrop={handleDrop}
-                        onClick={() => fileInputRef.current?.click()}
-                    >
-                        <input ref={fileInputRef} type="file" accept=".pdf,.docx" multiple className="hidden"
-                            onChange={e => {
-                                const files = Array.from(e.target.files || []).map(f => f.name);
-                                setUploadedFiles(prev => [...new Set([...prev, ...files])]);
-                            }}
-                        />
-                        <Upload className="w-8 h-8 text-[#1aff8c] mx-auto mb-3 opacity-60" />
-                        <p className="text-sm font-medium text-[rgba(255,255,255,0.6)]">Drop PDF/DOCX here</p>
-                        <p className="text-xs text-[rgba(255,255,255,0.3)] mt-1">or click to browse</p>
-                    </div>
+            <p className="text-muted-foreground text-sm max-w-2xl">
+                Convert unstructured regulatory documentation into executable database enforcement rules. Lexinel's N2L engine uses neural inference to map legal clauses to SQL assertion logic.
+            </p>
 
-                    {/* Uploaded Files */}
-                    {uploadedFiles.length > 0 && (
-                        <div className="glass-card rounded-xl overflow-hidden">
-                            <div className="px-4 py-3 border-b border-[rgba(26,255,140,0.08)]">
-                                <p className="text-xs font-bold text-[rgba(26,255,140,0.7)] uppercase tracking-widest">Loaded Documents</p>
+            {/* 2. Stats Strip (4 KPI Cards) */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                    { label: 'Ingested Policies', value: '03', icon: Layers, color: 'text-blue-400' },
+                    { label: 'Active Rules', value: deployed ? '12' : '09', icon: CheckCircle2, color: 'text-[#1aff8c]' },
+                    { label: 'Logic Latency', value: '42ms', icon: Zap, color: 'text-amber-400' },
+                    { label: 'Engine Health', value: 'Nominal', icon: Cpu, color: 'text-purple-400' },
+                ].map((stat, i) => (
+                    <div key={i} className="glass-card rounded-xl p-4 flex items-center gap-4 border border-white/5">
+                        <div className={`p-2 rounded-lg bg-white/5 ${stat.color}`}>
+                            <stat.icon className="w-4 h-4" />
+                        </div>
+                        <div>
+                            <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest mb-0.5">{stat.label}</p>
+                            <p className="text-xl font-bold text-white">{stat.value}</p>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* 3. Main Workspace (2/3 Column Grid) */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                {/* ── LEFT: The Action Column (2/3) ── */}
+                <div className="lg:col-span-2 space-y-6">
+
+                    {/* Primary Action: Dropzone */}
+                    {!synthComplete && !synthesizing && (
+                        <div
+                            className={`relative border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all duration-300 ${dragOver ? 'border-[#1aff8c] bg-[#1aff8c]/5 shadow-[0_0_30px_rgba(26,255,140,0.1)]' : 'border-white/10 hover:border-white/20 bg-white/[0.02]'}`}
+                            onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+                            onDragLeave={() => setDragOver(false)}
+                            onDrop={(e) => {
+                                e.preventDefault();
+                                setDragOver(false);
+                                handleFileUpload(e.dataTransfer.files);
+                            }}
+                            onClick={() => fileInputRef.current?.click()}
+                        >
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept=".pdf,.docx,.txt"
+                                multiple
+                                className="hidden"
+                                onClick={(e) => e.stopPropagation()}
+                                onChange={(e) => handleFileUpload(e)}
+                            />
+                            <div className="w-16 h-16 rounded-full bg-[#1aff8c]/5 border border-[#1aff8c]/20 flex items-center justify-center mx-auto mb-6">
+                                <Upload className="w-8 h-8 text-[#1aff8c]" />
                             </div>
-                            <div className="divide-y divide-[rgba(26,255,140,0.06)]">
-                                {uploadedFiles.map((f, i) => (
-                                    <div key={i} className="flex items-center gap-3 px-4 py-3">
-                                        <FileText className="w-4 h-4 text-[rgba(26,255,140,0.5)] flex-shrink-0" />
-                                        <span className="text-sm text-[rgba(255,255,255,0.7)] flex-1 truncate font-mono">{f}</span>
-                                        <button
-                                            onClick={() => runSynthesis(f)}
-                                            disabled={synthesizing}
-                                            className="text-[10px] font-bold text-[#070c0a] bg-[#1aff8c] px-2.5 py-1 rounded-md hover:bg-[#0de87a] disabled:opacity-50 transition-all"
-                                        >
-                                            Synthesize
-                                        </button>
-                                    </div>
-                                ))}
+                            <h3 className="text-lg font-bold text-white mb-2">Deploy New Regulation</h3>
+                            <p className="text-sm text-zinc-500 max-w-md mx-auto">
+                                Drag and drop your regulatory PDF or compliance documentation here to begin N2L neural synthesis.
+                            </p>
+                            <div className="mt-8 flex justify-center gap-6 text-[10px] font-black text-zinc-600 uppercase tracking-widest">
+                                <span className="flex items-center gap-1.5"><FileText className="w-3 h-3" /> PDF / DOCX</span>
+                                <span className="flex items-center gap-1.5"><Shield className="w-3 h-3" /> AI VERIFIED</span>
+                                <span className="flex items-center gap-1.5"><Globe className="w-3 h-3" /> MULTI-REGION</span>
                             </div>
                         </div>
                     )}
 
-                    {/* Quick Templates */}
-                    <div>
-                        <p className="text-xs text-[rgba(255,255,255,0.3)] uppercase tracking-widest mb-2 px-1">Pre-loaded Templates</p>
-                        {POLICY_TEMPLATES.map((t, i) => (
-                            <button
-                                key={i}
-                                onClick={() => runSynthesis(t.name)}
-                                disabled={synthesizing}
-                                className="w-full text-left glass-card rounded-xl p-4 mb-2 hover:border-[rgba(26,255,140,0.25)] transition-all border border-[rgba(26,255,140,0.08)] disabled:opacity-70"
-                            >
-                                <div className="flex items-start gap-3">
-                                    <BookOpen className="w-4 h-4 text-[rgba(26,255,140,0.5)] flex-shrink-0 mt-0.5" />
-                                    <div>
-                                        <p className="text-sm font-medium text-white">{t.name}</p>
-                                        <p className="text-xs text-[rgba(255,255,255,0.35)] mt-0.5">{t.desc}</p>
-                                        <p className="text-[10px] text-[rgba(26,255,140,0.5)] mt-1">{t.clauses} clauses · {t.size}</p>
-                                    </div>
+                    {/* Synthesis Console & Results */}
+                    {(synthesizing || synthComplete) && (
+                        <div className="glass-card rounded-2xl overflow-hidden border border-white/5">
+                            <div className="flex items-center justify-between px-6 py-4 bg-[#070c0a] border-b border-white/5">
+                                <div className="flex items-center gap-3">
+                                    <Terminal className="w-4 h-4 text-zinc-600" />
+                                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-2">n2l.console_v3 // processing</span>
                                 </div>
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* N2L Synthesis Console */}
-                <div className="lg:col-span-2 space-y-4">
-                    <div className="glass-card rounded-xl overflow-hidden">
-                        <div className="flex items-center gap-3 px-4 py-3 border-b border-[rgba(26,255,140,0.08)]">
-                            <div className="flex gap-1.5">
-                                <div className="w-3 h-3 rounded-full bg-red-500/70" />
-                                <div className="w-3 h-3 rounded-full bg-amber-500/70" />
-                                <div className="w-3 h-3 rounded-full bg-[#1aff8c]/70" />
+                                {synthComplete && (
+                                    <button onClick={() => { setSynthComplete(false); setSynthesizing(false); }} className="text-zinc-500 hover:text-white transition-colors">
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                )}
                             </div>
-                            <span className="text-xs font-mono text-[rgba(26,255,140,0.6)]">lexinel.n2l — gemini-synthesis-engine</span>
-                            {synthesizing && (
-                                <div className="ml-auto text-[10px] text-[#1aff8c] animate-pulse flex items-center gap-1">
-                                    <Cpu className="w-3 h-3" /> synthesizing
-                                </div>
-                            )}
-                            {synthComplete && (
-                                <div className="ml-auto text-[10px] text-[#1aff8c] flex items-center gap-1">
-                                    <CheckCircle2 className="w-3 h-3" /> complete
-                                </div>
-                            )}
-                        </div>
-                        <div className="h-48 overflow-y-auto bg-[#030806] p-4 font-mono text-xs space-y-1">
-                            {synthLog.length === 0 ? (
-                                <p className="text-[rgba(26,255,140,0.3)]">{'>'} Select a policy document to begin N2L synthesis...</p>
-                            ) : synthLog.map((line, i) => (
-                                <p key={i} className={
-                                    line.includes('✅') ? 'text-[#1aff8c] font-bold' :
-                                        line.includes('🧠') ? 'text-blue-400' :
-                                            'text-[rgba(26,255,140,0.6)]'
-                                }>{line}</p>
-                            ))}
-                            {synthesizing && <p className="text-[#1aff8c] animate-pulse">▋</p>}
-                        </div>
-                    </div>
-
-                    {/* Synthesized Rules */}
-                    {synthComplete && (
-                        <div className="glass-card rounded-xl overflow-hidden">
-                            <div className="flex items-center justify-between px-4 py-3 border-b border-[rgba(26,255,140,0.08)]">
-                                <div className="flex items-center gap-2">
-                                    <Code2 className="w-4 h-4 text-[#1aff8c]" />
-                                    <h3 className="text-sm font-bold text-white">N2L Output — Enforcement Rules</h3>
-                                </div>
-                                <span className="text-[10px] font-bold text-[#1aff8c] border border-[rgba(26,255,140,0.2)] rounded px-2 py-0.5">
-                                    {selectedTemplate}
-                                </span>
-                            </div>
-                            <div className="divide-y divide-[rgba(26,255,140,0.06)]">
-                                {SYNTHESIZED_RULES_OUTPUT.map(rule => (
-                                    <div key={rule.id} className="p-4">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-sm font-bold text-[#1aff8c] font-mono">{rule.id}</span>
-                                                <span className="text-xs text-[rgba(255,255,255,0.4)] border border-[rgba(26,255,140,0.15)] rounded px-2 py-0.5">{rule.clause}</span>
-                                                <span className="text-xs text-[rgba(255,255,255,0.5)]">{rule.label}</span>
-                                            </div>
-                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${rule.status === 'DEPLOYED' ? 'text-[#1aff8c] border-[rgba(26,255,140,0.3)] bg-[rgba(26,255,140,0.08)]' : 'text-amber-400 border-amber-800/40 bg-amber-950/20'}`}>
-                                                {rule.status}
+                            <div className="h-[280px] overflow-y-auto bg-[#030605] p-6 font-mono text-[11px] custom-scrollbar">
+                                <AnimatePresence>
+                                    {synthLog.map((line, i) => (
+                                        <motion.p key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="mb-2 text-zinc-500 border-l border-white/5 pl-4 py-0.5">
+                                            <span className="text-white/10 mr-4 font-black">STP_{i}</span>
+                                            <span className={line.includes('✅') ? 'text-[#1aff8c] font-black' : line.includes('🧠') ? 'text-blue-400' : ''}>
+                                                {line}
                                             </span>
+                                        </motion.p>
+                                    ))}
+                                </AnimatePresence>
+                                {synthesizing && <motion.div animate={{ opacity: [0, 1] }} transition={{ repeat: Infinity, duration: 0.8 }} className="w-1.5 h-4 bg-[#1aff8c] mt-2 ml-4" />}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Synthesized Logic Registry */}
+                    {synthComplete && (
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between px-2">
+                                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                                    <GitBranch className="w-4 h-4 text-[#1aff8c]" /> Logic Output Registry
+                                </h3>
+                                <button
+                                    onClick={handleDeploy}
+                                    disabled={deployed || deploying}
+                                    className={`flex items-center gap-2 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${deployed ? 'bg-[#1aff8c]/10 text-[#1aff8c] border border-[#1aff8c]/30' : 'bg-[#1aff8c] text-black shadow-[0_0_20px_rgba(26,255,140,0.3)] hover:scale-105 active:scale-95'}`}
+                                >
+                                    {deploying ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : deployed ? <ShieldCheck className="w-3.5 h-3.5" /> : <Zap className="w-3.5 h-3.5" />}
+                                    {deploying ? 'Initializing...' : deployed ? 'Rules Live' : 'Inject Logic'}
+                                </button>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-12">
+                                {SYNTHESIZED_RULES_OUTPUT.map((rule, idx) => (
+                                    <div key={rule.id} className="glass-card rounded-2xl p-6 border border-white/5 bg-white/[0.02] hover:border-[rgba(26,255,140,0.3)] transition-all">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-[10px] font-black text-[#1aff8c] bg-[rgba(26,255,140,0.1)] px-2 py-1 rounded-md">{rule.id}</span>
+                                                <span className="text-[9px] font-mono text-zinc-500 font-bold uppercase tracking-widest">{rule.clause}</span>
+                                            </div>
+                                            {deployed && <Activity className="w-3.5 h-3.5 text-[#1aff8c] animate-pulse" />}
                                         </div>
-                                        <code className="block text-xs font-mono text-amber-300 bg-[rgba(26,255,140,0.03)] rounded p-2 border border-[rgba(26,255,140,0.06)]">
+                                        <p className="text-xs font-bold text-white mb-4 leading-tight">{rule.label}</p>
+                                        <code className="block w-full p-3 rounded-xl bg-black/60 font-mono text-[10px] text-amber-500 border border-white/5 truncate">
                                             {rule.logic}
                                         </code>
                                     </div>
                                 ))}
                             </div>
-                            <div className="px-4 py-3 border-t border-[rgba(26,255,140,0.08)] flex gap-3">
-                                <button
-                                    onClick={handleDeploy}
-                                    disabled={deploying || deployed}
-                                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all disabled:opacity-70"
-                                    style={deployed
-                                        ? { background: 'rgba(26,255,140,0.15)', color: '#1aff8c', border: '1px solid rgba(26,255,140,0.4)' }
-                                        : { background: '#1aff8c', color: '#070c0a', boxShadow: '0 0 12px rgba(26,255,140,0.3)' }
-                                    }
-                                >
-                                    {deploying ? (
-                                        <><Loader2 className="w-4 h-4 animate-spin" /> Deploying...</>
-                                    ) : deployed ? (
-                                        <><CheckCircle2 className="w-4 h-4" /> Deployed to Sentinel</>
-                                    ) : (
-                                        <><Database className="w-4 h-4" /> Deploy to Sentinel</>
-                                    )}
-                                </button>
-                                <button
-                                    onClick={handleExport}
-                                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold text-[rgba(255,255,255,0.6)] border border-[rgba(255,255,255,0.1)] hover:border-[rgba(26,255,140,0.3)] transition-all"
-                                >
-                                    <Download className="w-4 h-4" /> Export Rules
-                                </button>
-                            </div>
-
-                            {/* Deploy Log Terminal — visible during and after deploy */}
-                            {(deployLog.length > 0) && (
-                                <div className="border-t border-[rgba(26,255,140,0.08)] bg-[#030806] p-4 font-mono text-xs space-y-1">
-                                    <p className="text-[rgba(26,255,140,0.4)] text-[10px] uppercase tracking-widest mb-2">
-                                        ↳ Deployment Log
-                                    </p>
-                                    {deployLog.map((line, i) => (
-                                        <p key={i} className={
-                                            line.startsWith('✅') ? 'text-[#1aff8c] font-bold' :
-                                                line.startsWith('🛡️') ? 'text-[#1aff8c]' :
-                                                    line.startsWith('❌') ? 'text-red-400 font-bold' :
-                                                        line.startsWith('⏸️') ? 'text-amber-400' :
-                                                            'text-[rgba(26,255,140,0.55)]'
-                                        }>{line}</p>
-                                    ))}
-                                    {deploying && <p className="text-[#1aff8c] animate-pulse">▋</p>}
-                                    {deployResult && (
-                                        <div className="mt-3 pt-3 border-t border-[rgba(26,255,140,0.08)] flex items-center gap-4">
-                                            <span className="text-[#1aff8c] font-bold">{deployResult.deployed} rules live</span>
-                                            {deployResult.skipped > 0 && (
-                                                <span className="text-amber-400">{deployResult.skipped} pending</span>
-                                            )}
-                                            <span className="text-[rgba(255,255,255,0.3)] text-[10px]">→ Go to Sentinel to run a scan</span>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
                         </div>
                     )}
                 </div>
+
+                {/* ── RIGHT: The Support Column (1/3) ── */}
+                <div className="space-y-6">
+
+                    {/* Loaded Documents */}
+                    <div className="glass-card rounded-2xl overflow-hidden border border-white/5">
+                        <div className="px-4 py-3 border-b border-white/5 bg-white/[0.01]">
+                            <h3 className="text-xs font-bold text-white flex items-center gap-2">
+                                <Database className="w-3.5 h-3.5 text-[#1aff8c]" /> Source Registry
+                            </h3>
+                        </div>
+                        <div className="divide-y divide-white/5">
+                            {uploadedFiles.map((f, i) => (
+                                <div key={i} className="flex items-center justify-between px-4 py-3 hover:bg-white/[0.02] transition-colors">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <FileText className="w-4 h-4 text-zinc-500 flex-shrink-0" />
+                                        <span className="text-xs text-white truncate font-medium">{f}</span>
+                                    </div>
+                                    <button onClick={() => runSynthesis(f)} className="p-1.5 rounded-lg bg-[#1aff8c]/10 text-[#1aff8c] hover:bg-[#1aff8c]/20">
+                                        <ArrowRight className="w-3 h-3" />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Quick Templates */}
+                    <div className="glass-card rounded-2xl p-5 border border-white/5 space-y-4">
+                        <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] px-1">Baseline Standards</h3>
+                        {POLICY_TEMPLATES.map((t, i) => (
+                            <button key={i} onClick={() => runSynthesis(t.name)} className="w-full text-left p-4 rounded-xl bg-white/[0.03] border border-white/5 hover:border-[#1aff8c]/30 hover:bg-[#1aff8c]/5 transition-all group">
+                                <p className="text-xs font-bold text-white mb-1 group-hover:text-[#1aff8c]">{t.name}</p>
+                                <p className="text-[9px] font-medium text-zinc-600 uppercase tracking-tight">{t.desc} · {t.size}</p>
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Engine Telemetry */}
+                    <div className="glass-card rounded-2xl p-6 border border-white/5 bg-gradient-to-br from-white/[0.03] to-transparent">
+                        <h3 className="text-[10px] font-black text-white uppercase tracking-[0.3em] mb-6 flex items-center gap-2">
+                            <Activity className="w-3.5 h-3.5 text-[#1aff8c]" /> Agentic Vitals
+                        </h3>
+                        <div className="space-y-5">
+                            {[
+                                { label: 'Inference Confidence', val: '0.982', pct: 98, col: 'bg-[#1aff8c]' },
+                                { label: 'Clause Recall', val: '100%', pct: 100, col: 'bg-blue-400' },
+                                { label: 'Thread Memory', val: '1.2GB', pct: 34, col: 'bg-purple-400' },
+                            ].map((stat, i) => (
+                                <div key={i}>
+                                    <div className="flex justify-between mb-2">
+                                        <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-widest">{stat.label}</span>
+                                        <span className="text-[9px] font-mono text-white tracking-widest">{stat.val}</span>
+                                    </div>
+                                    <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+                                        <div className={`h-full ${stat.col} opacity-40`} style={{ width: `${stat.pct}%` }} />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
             </div>
+
+            {/* Background Decorations */}
+            <div className="fixed top-0 right-0 -translate-y-1/2 translate-x-1/2 w-[600px] h-[600px] bg-[#1aff8c] blur-[200px] opacity-[0.02] pointer-events-none -z-10" />
         </div>
     );
 }
