@@ -1,209 +1,436 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useRef } from 'react';
-import { Activity, ShieldCheck, AlertTriangle, CheckCircle2, XCircle, Clock, Database, Filter } from 'lucide-react';
+import { useState, useEffect, useRef } from "react";
+import {
+  Activity,
+  ShieldCheck,
+  AlertTriangle,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Database,
+  Filter,
+} from "lucide-react";
 
 // ── Static initial feed (no backend needed) ────────────────────
 const INITIAL_FEED = [
-    { id: 'T001', ts: '19:21:44', agent: 'IBM-AML-Scanner', rule: 'AML-R02', action: 'Structuring Detected', status: 'block', details: 'ACC-8912 · $1,800×4 txns in 6h window' },
-    { id: 'T002', ts: '19:21:02', agent: 'IBM-AML-Scanner', rule: 'AML-R05', action: 'Tax-Haven Route', status: 'warn', details: 'SWIFT: BOFIUS3N → KY · $3,400' },
-    { id: 'T003', ts: '19:20:18', agent: 'IBM-AML-Scanner', rule: 'ALL', action: 'Batch Scan', status: 'pass', details: '482 records clean · 0 violations' },
-    { id: 'T004', ts: '19:19:55', agent: 'IBM-AML-Scanner', rule: 'AML-R01', action: 'CTR Threshold', status: 'block', details: 'ACC-6671 · $14,200 wire transfer' },
-    { id: 'T005', ts: '19:19:11', agent: 'N2L-Engine', rule: 'SYNC', action: 'Rule Refresh', status: 'pass', details: '6 rules active · Gemini synthesis OK' },
-    { id: 'T006', ts: '19:18:44', agent: 'IBM-AML-Scanner', rule: 'AML-R04', action: 'PII Exposure', status: 'warn', details: 'ACC-3345 · SSN field unencrypted in audit log' },
-    { id: 'T007', ts: '19:17:30', agent: 'IBM-AML-Scanner', rule: 'AML-R03', action: 'Cross-Border Flag', status: 'block', details: 'DE→US · $6,700 · no correspondent bank' },
-    { id: 'T008', ts: '19:16:00', agent: 'N2L-Engine', rule: 'HEARTBEAT', action: 'Sentinel Heartbeat', status: 'pass', details: 'IBM AML dataset online · 8,720 records indexed' },
-    { id: 'T009', ts: '19:15:12', agent: 'IBM-AML-Scanner', rule: 'AML-R05', action: 'Tax-Haven Route', status: 'block', details: 'ACC-1120 · CH bank · $8,000 layering pattern' },
-    { id: 'T010', ts: '19:14:44', agent: 'IBM-AML-Scanner', rule: 'AML-R01', action: 'CTR Threshold', status: 'block', details: 'ACC-7789 · $22,000 cash deposit' },
-    { id: 'T011', ts: '19:14:01', agent: 'IBM-AML-Scanner', rule: 'ALL', action: 'Batch Scan', status: 'pass', details: '511 records clean · 0 violations' },
-    { id: 'T012', ts: '19:13:20', agent: 'IBM-AML-Scanner', rule: 'AML-R02', action: 'Structuring Detected', status: 'warn', details: 'ACC-2290 · $1,900×3 txns over 4h' },
+  {
+    id: "T001",
+    ts: "19:21:44",
+    agent: "IBM-AML-Scanner",
+    rule: "AML-R02",
+    action: "Structuring Detected",
+    status: "block",
+    details: "ACC-8912 · $1,800×4 txns in 6h window",
+  },
+  {
+    id: "T002",
+    ts: "19:21:02",
+    agent: "IBM-AML-Scanner",
+    rule: "AML-R05",
+    action: "Tax-Haven Route",
+    status: "warn",
+    details: "SWIFT: BOFIUS3N → KY · $3,400",
+  },
+  {
+    id: "T003",
+    ts: "19:20:18",
+    agent: "IBM-AML-Scanner",
+    rule: "ALL",
+    action: "Batch Scan",
+    status: "pass",
+    details: "482 records clean · 0 violations",
+  },
+  {
+    id: "T004",
+    ts: "19:19:55",
+    agent: "IBM-AML-Scanner",
+    rule: "AML-R01",
+    action: "CTR Threshold",
+    status: "block",
+    details: "ACC-6671 · $14,200 wire transfer",
+  },
+  {
+    id: "T005",
+    ts: "19:19:11",
+    agent: "N2L-Engine",
+    rule: "SYNC",
+    action: "Rule Refresh",
+    status: "pass",
+    details: "6 rules active · Gemini synthesis OK",
+  },
+  {
+    id: "T006",
+    ts: "19:18:44",
+    agent: "IBM-AML-Scanner",
+    rule: "AML-R04",
+    action: "PII Exposure",
+    status: "warn",
+    details: "ACC-3345 · SSN field unencrypted in audit log",
+  },
+  {
+    id: "T007",
+    ts: "19:17:30",
+    agent: "IBM-AML-Scanner",
+    rule: "AML-R03",
+    action: "Cross-Border Flag",
+    status: "block",
+    details: "DE→US · $6,700 · no correspondent bank",
+  },
+  {
+    id: "T008",
+    ts: "19:16:00",
+    agent: "N2L-Engine",
+    rule: "HEARTBEAT",
+    action: "Sentinel Heartbeat",
+    status: "pass",
+    details: "IBM AML dataset online · 8,720 records indexed",
+  },
+  {
+    id: "T009",
+    ts: "19:15:12",
+    agent: "IBM-AML-Scanner",
+    rule: "AML-R05",
+    action: "Tax-Haven Route",
+    status: "block",
+    details: "ACC-1120 · CH bank · $8,000 layering pattern",
+  },
+  {
+    id: "T010",
+    ts: "19:14:44",
+    agent: "IBM-AML-Scanner",
+    rule: "AML-R01",
+    action: "CTR Threshold",
+    status: "block",
+    details: "ACC-7789 · $22,000 cash deposit",
+  },
+  {
+    id: "T011",
+    ts: "19:14:01",
+    agent: "IBM-AML-Scanner",
+    rule: "ALL",
+    action: "Batch Scan",
+    status: "pass",
+    details: "511 records clean · 0 violations",
+  },
+  {
+    id: "T012",
+    ts: "19:13:20",
+    agent: "IBM-AML-Scanner",
+    rule: "AML-R02",
+    action: "Structuring Detected",
+    status: "warn",
+    details: "ACC-2290 · $1,900×3 txns over 4h",
+  },
 ];
 
 // Simulated new entries injected every few seconds
 const SIMULATED_NEW = [
-    { rule: 'AML-R01', action: 'CTR Threshold', status: 'block' as const, details: 'ACC-XXXX · $15,000+ wire detected' },
-    { rule: 'AML-R03', action: 'Cross-Border Flag', status: 'warn' as const, details: 'RU→US · $4,800 · high-risk jurisdiction' },
-    { rule: 'ALL', action: 'Batch Scan', status: 'pass' as const, details: '398 records clean · 0 violations' },
-    { rule: 'AML-R04', action: 'PII Exposure', status: 'block' as const, details: 'ACC-XXXX · unencrypted PII in payload' },
-    { rule: 'AML-R02', action: 'Structuring', status: 'warn' as const, details: 'ACC-XXXX · $1,950×3 txns in 8h' },
+  {
+    rule: "AML-R01",
+    action: "CTR Threshold",
+    status: "block" as const,
+    details: "ACC-XXXX · $15,000+ wire detected",
+  },
+  {
+    rule: "AML-R03",
+    action: "Cross-Border Flag",
+    status: "warn" as const,
+    details: "RU→US · $4,800 · high-risk jurisdiction",
+  },
+  {
+    rule: "ALL",
+    action: "Batch Scan",
+    status: "pass" as const,
+    details: "398 records clean · 0 violations",
+  },
+  {
+    rule: "AML-R04",
+    action: "PII Exposure",
+    status: "block" as const,
+    details: "ACC-XXXX · unencrypted PII in payload",
+  },
+  {
+    rule: "AML-R02",
+    action: "Structuring",
+    status: "warn" as const,
+    details: "ACC-XXXX · $1,950×3 txns in 8h",
+  },
 ];
 
-const STATUS = {
-    pass: { label: 'PASS', cls: 'text-[#1aff8c] bg-[rgba(26,255,140,0.08)] border-[rgba(26,255,140,0.25)]' },
-    warn: { label: 'WARN', cls: 'text-amber-400 bg-amber-950/30 border-amber-700/40' },
-    block: { label: 'BLOCK', cls: 'text-red-400 bg-red-950/30 border-red-700/40' },
+const STATUS: Record<string, { label: string; cls: string }> = {
+  pass: {
+    label: "PASS",
+    cls: "text-[#1aff8c] bg-[rgba(26,255,140,0.08)] border-[rgba(26,255,140,0.25)]",
+  },
+  warn: {
+    label: "WARN",
+    cls: "text-amber-400 bg-amber-950/30 border-amber-700/40",
+  },
+  block: {
+    label: "BLOCK",
+    cls: "text-red-400 bg-red-950/30 border-red-700/40",
+  },
 };
 
-const FILTERS = ['ALL', 'BLOCK', 'WARN', 'PASS'];
+const FILTERS = ["ALL", "BLOCK", "WARN", "PASS"];
 
 let idCounter = 100;
-function makeId() { return `T${String(++idCounter).padStart(3, '0')}`; }
+function makeId() {
+  return `T${String(++idCounter).padStart(3, "0")}`;
+}
 function nowTime() {
-    const d = new Date();
-    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`;
 }
 
 export default function MonitorPage() {
-    const [feed, setFeed] = useState<any[]>(INITIAL_FEED);
-    const [stats, setStats] = useState<any>({
-        active_policies: 5,
-        traces_per_min: 0,
-        blocking_rate: 0,
-        avg_latency: 124
-    });
-    const [filter, setFilter] = useState<'ALL' | 'BLOCK' | 'WARN' | 'PASS'>('ALL');
-    const [paused, setPaused] = useState(false);
-    const [loading, setLoading] = useState(true);
+  const [feed, setFeed] = useState<any[]>(INITIAL_FEED);
+  const [stats, setStats] = useState<any>({
+    active_policies: 5,
+    traces_per_min: 0,
+    blocking_rate: 0,
+    avg_latency: 124,
+  });
+  const [filter, setFilter] = useState<"ALL" | "BLOCK" | "WARN" | "PASS">(
+    "ALL",
+  );
+  const [paused, setPaused] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        async function fetchMonitor() {
-            if (paused) return;
-            try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/dashboard/monitor`);
-                if (!response.ok) {
-                    console.error(`Monitor fetch error: ${response.status} ${response.statusText}`);
-                    throw new Error(`Failed to fetch: ${response.status}`);
-                }
-                const data = await response.json();
-                
-                if (data.traces && data.traces.length > 0) {
-                    setFeed(data.traces);
-                }
-                setStats({
-                    active_policies: data.active_policies,
-                    traces_per_min: data.traces_per_min,
-                    blocking_rate: data.blocking_rate,
-                    avg_latency: data.avg_latency || 124
-                });
-            } catch (err) {
-                console.error("Monitor fetch error:", err);
-            } finally {
-                setLoading(false);
-            }
+  useEffect(() => {
+    async function fetchMonitor() {
+      if (paused) return;
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL || ""}/api/dashboard/monitor`,
+        );
+        if (!response.ok) {
+          console.error(
+            `Monitor fetch error: ${response.status} ${response.statusText}`,
+          );
+          throw new Error(`Failed to fetch: ${response.status}`);
         }
-        fetchMonitor();
-        const interval = setInterval(fetchMonitor, 3000); 
-        return () => clearInterval(interval);
-    }, [paused]);
+        const data = await response.json();
 
-    const filtered = filter === 'ALL' ? feed : feed.filter(e => e.status === filter.toLowerCase());
-    const blocked = feed.filter(e => e.status.toLowerCase() === 'block').length;
-    const warned = feed.filter(e => e.status.toLowerCase() === 'warn').length;
-    const passed = feed.filter(e => e.status.toLowerCase() === 'pass').length;
+        if (data.traces && data.traces.length > 0) {
+          setFeed(data.traces);
+        }
+        setStats({
+          active_policies: data.active_policies,
+          traces_per_min: data.traces_per_min,
+          blocking_rate: data.blocking_rate,
+          avg_latency: data.avg_latency || 124,
+        });
+      } catch (err) {
+        console.error("Monitor fetch error:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchMonitor();
+    const interval = setInterval(fetchMonitor, 3000);
+    return () => clearInterval(interval);
+  }, [paused]);
 
-    return (
-        <div className="space-y-6 pb-16">
-            {/* Header */}
-            <div className="flex items-start justify-between flex-wrap gap-4">
-                <div>
-                    <div className="flex items-center gap-3 mb-1">
-                        <div className="p-2 rounded-lg bg-[rgba(26,255,140,0.1)] border border-[rgba(26,255,140,0.2)]">
-                            <Activity className="w-5 h-5 text-[#1aff8c]" />
-                        </div>
-                        <div>
-                            <h1 className="text-2xl font-bold text-foreground">Live Scan Feed</h1>
-                            <p className="text-[rgba(26,255,140,0.5)] text-xs tracking-widest uppercase">IBM AML Dataset · Real-time Enforcement Stream</p>
-                        </div>
-                    </div>
-                    <p className="text-muted-foreground text-sm mt-1 max-w-xl">
-                        Every record scanned by Lexinel's enforcement engine appears here in real-time. Violations are automatically flagged against N2L-synthesized AML rules.
-                    </p>
-                </div>
+  const filtered =
+    filter === "ALL"
+      ? feed
+      : feed.filter((e) => e.status === filter.toLowerCase());
+  const blocked = feed.filter((e) => e.status.toLowerCase() === "block").length;
+  const warned = feed.filter((e) => e.status.toLowerCase() === "warn").length;
+  const passed = feed.filter((e) => e.status.toLowerCase() === "pass").length;
 
-                {/* Live indicator + pause */}
-                <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[rgba(26,255,140,0.25)] bg-[rgba(26,255,140,0.06)]">
-                        <div className={`w-1.5 h-1.5 rounded-full ${paused ? 'bg-amber-400' : 'bg-[#1aff8c] animate-pulse'}`} />
-                        <span className="text-xs font-bold text-[#1aff8c] font-mono uppercase">{paused ? 'PAUSED' : 'LIVE'}</span>
-                    </div>
-                    <button onClick={() => setPaused(p => !p)}
-                        className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition-all ${paused
-                            ? 'border-[rgba(26,255,140,0.3)] text-[#1aff8c] bg-[rgba(26,255,140,0.08)]'
-                            : 'border-border text-muted-foreground hover:border-[rgba(26,255,140,0.2)]'}`}>
-                        {paused ? '▶ Resume' : '⏸ Pause'}
-                    </button>
-                </div>
+  return (
+    <div className="space-y-6 pb-16">
+      {/* Header */}
+      <div className="flex items-start justify-between flex-wrap gap-4">
+        <div>
+          <div className="flex items-center gap-3 mb-1">
+            <div className="p-2 rounded-lg bg-[rgba(26,255,140,0.1)] border border-[rgba(26,255,140,0.2)]">
+              <Activity className="w-5 h-5 text-[#1aff8c]" />
             </div>
-
-            {/* KPI Strip */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {[
-                    { label: 'Blocked', value: blocked, icon: XCircle, color: 'text-red-400', glow: 'rgba(239,68,68,0.1)' },
-                    { label: 'Blocking Rate', value: `${stats.blocking_rate}%`, icon: AlertTriangle, color: 'text-amber-400', glow: 'rgba(245,158,11,0.1)' },
-                    { label: 'Traces/min', value: stats.traces_per_min, icon: Activity, color: 'text-[#1aff8c]', glow: 'rgba(26,255,140,0.1)' },
-                    { label: 'Active Rules', value: stats.active_policies, icon: ShieldCheck, color: 'text-blue-400', glow: 'rgba(59,130,246,0.1)' },
-                ].map((k, i) => (
-                    <div key={i} className="glass-card rounded-xl p-4" style={{ boxShadow: `0 0 16px ${k.glow}` }}>
-                        <div className="flex items-center justify-between mb-2">
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{k.label}</p>
-                            <k.icon className={`w-4 h-4 ${k.color}`} />
-                        </div>
-                        <p className={`text-2xl font-bold ${k.color}`}>{k.value}</p>
-                    </div>
-                ))}
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">
+                Live Scan Feed
+              </h1>
+              <p className="text-[rgba(26,255,140,0.5)] text-xs tracking-widest uppercase">
+                IBM AML Dataset · Real-time Enforcement Stream
+              </p>
             </div>
-
-            {/* Feed table */}
-            <div className="glass-card rounded-xl overflow-hidden">
-                {/* Terminal bar */}
-                <div className="flex items-center justify-between px-4 py-3 bg-[#030806] border-b border-[rgba(26,255,140,0.08)]">
-                    <div className="flex items-center gap-3">
-                        <div className="flex gap-1.5">
-                            <div className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
-                            <div className="w-2.5 h-2.5 rounded-full bg-amber-500/60" />
-                            <div className="w-2.5 h-2.5 rounded-full bg-[#1aff8c]/60" />
-                        </div>
-                        <span className="text-[10px] font-mono text-[rgba(26,255,140,0.4)]">lexinel.sentinel — enforcement-stream</span>
-                    </div>
-                    {/* Filter pills */}
-                    <div className="flex gap-1">
-                        {FILTERS.map(f => (
-                            <button key={f} onClick={() => setFilter(f as typeof filter)}
-                                className={`text-[10px] font-bold px-2 py-0.5 rounded transition-all ${filter === f ? 'bg-[#1aff8c] text-[#070c0a]' : 'text-muted-foreground hover:text-foreground'}`}>
-                                {f}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Table */}
-                <div className="overflow-x-auto">
-                    <table className="w-full text-xs">
-                        <thead>
-                            <tr className="border-b border-[rgba(26,255,140,0.08)] bg-[rgba(26,255,140,0.02)]">
-                                {['Time', 'ID', 'Agent', 'Rule', 'Action', 'Status', 'Details'].map(h => (
-                                    <th key={h} className="px-4 py-2.5 text-left text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{h}</th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[rgba(26,255,140,0.04)] font-mono">
-                            {filtered.map((e, i) => {
-                                const s = STATUS[e.status];
-                                return (
-                                    <tr key={e.id}
-                                        className={`hover:bg-[rgba(26,255,140,0.02)] transition-colors ${i === 0 && !paused ? 'animate-pulse-row' : ''}`}>
-                                        <td className="px-4 py-2.5 text-[rgba(26,255,140,0.4)]">{e.ts}</td>
-                                        <td className="px-4 py-2.5 text-[rgba(26,255,140,0.6)]">{e.id}</td>
-                                        <td className="px-4 py-2.5 text-foreground">{e.agent}</td>
-                                        <td className="px-4 py-2.5 text-blue-400">{e.rule}</td>
-                                        <td className="px-4 py-2.5 text-foreground/70">{e.action}</td>
-                                        <td className="px-4 py-2.5">
-                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${s.cls}`}>{s.label}</span>
-                                        </td>
-                                        <td className="px-4 py-2.5 text-muted-foreground max-w-xs truncate">{e.details}</td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
-                </div>
-
-                <div className="px-4 py-3 bg-[#030806] border-t border-[rgba(26,255,140,0.08)] text-center">
-                    <span className="text-[10px] text-[rgba(26,255,140,0.3)] font-mono">
-                        {filtered.length} entries · {paused ? 'Stream paused' : 'Auto-refreshing every ~4s'}
-                    </span>
-                </div>
-            </div>
+          </div>
+          <p className="text-muted-foreground text-sm mt-1 max-w-xl">
+            Every record scanned by Lexinel's enforcement engine appears here in
+            real-time. Violations are automatically flagged against
+            N2L-synthesized AML rules.
+          </p>
         </div>
-    );
+
+        {/* Live indicator + pause */}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[rgba(26,255,140,0.25)] bg-[rgba(26,255,140,0.06)]">
+            <div
+              className={`w-1.5 h-1.5 rounded-full ${paused ? "bg-amber-400" : "bg-[#1aff8c] animate-pulse"}`}
+            />
+            <span className="text-xs font-bold text-[#1aff8c] font-mono uppercase">
+              {paused ? "PAUSED" : "LIVE"}
+            </span>
+          </div>
+          <button
+            onClick={() => setPaused((p) => !p)}
+            className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition-all ${
+              paused
+                ? "border-[rgba(26,255,140,0.3)] text-[#1aff8c] bg-[rgba(26,255,140,0.08)]"
+                : "border-border text-muted-foreground hover:border-[rgba(26,255,140,0.2)]"
+            }`}
+          >
+            {paused ? "▶ Resume" : "⏸ Pause"}
+          </button>
+        </div>
+      </div>
+
+      {/* KPI Strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {[
+          {
+            label: "Blocked",
+            value: blocked,
+            icon: XCircle,
+            color: "text-red-400",
+            glow: "rgba(239,68,68,0.1)",
+          },
+          {
+            label: "Blocking Rate",
+            value: `${stats.blocking_rate}%`,
+            icon: AlertTriangle,
+            color: "text-amber-400",
+            glow: "rgba(245,158,11,0.1)",
+          },
+          {
+            label: "Traces/min",
+            value: stats.traces_per_min,
+            icon: Activity,
+            color: "text-[#1aff8c]",
+            glow: "rgba(26,255,140,0.1)",
+          },
+          {
+            label: "Active Rules",
+            value: stats.active_policies,
+            icon: ShieldCheck,
+            color: "text-blue-400",
+            glow: "rgba(59,130,246,0.1)",
+          },
+        ].map((k, i) => (
+          <div
+            key={i}
+            className="glass-card rounded-xl p-4"
+            style={{ boxShadow: `0 0 16px ${k.glow}` }}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
+                {k.label}
+              </p>
+              <k.icon className={`w-4 h-4 ${k.color}`} />
+            </div>
+            <p className={`text-2xl font-bold ${k.color}`}>{k.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Feed table */}
+      <div className="glass-card rounded-xl overflow-hidden">
+        {/* Terminal bar */}
+        <div className="flex items-center justify-between px-4 py-3 bg-[#030806] border-b border-[rgba(26,255,140,0.08)]">
+          <div className="flex items-center gap-3">
+            <div className="flex gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
+              <div className="w-2.5 h-2.5 rounded-full bg-amber-500/60" />
+              <div className="w-2.5 h-2.5 rounded-full bg-[#1aff8c]/60" />
+            </div>
+            <span className="text-[10px] font-mono text-[rgba(26,255,140,0.4)]">
+              lexinel.sentinel — enforcement-stream
+            </span>
+          </div>
+          {/* Filter pills */}
+          <div className="flex gap-1">
+            {FILTERS.map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f as typeof filter)}
+                className={`text-[10px] font-bold px-2 py-0.5 rounded transition-all ${filter === f ? "bg-[#1aff8c] text-[#070c0a]" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-[rgba(26,255,140,0.08)] bg-[rgba(26,255,140,0.02)]">
+                {[
+                  "Time",
+                  "ID",
+                  "Agent",
+                  "Rule",
+                  "Action",
+                  "Status",
+                  "Details",
+                ].map((h) => (
+                  <th
+                    key={h}
+                    className="px-4 py-2.5 text-left text-[10px] font-bold text-muted-foreground uppercase tracking-widest"
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[rgba(26,255,140,0.04)] font-mono">
+              {filtered.map((e, i) => {
+                const s = STATUS[e.status];
+                return (
+                  <tr
+                    key={e.id}
+                    className={`hover:bg-[rgba(26,255,140,0.02)] transition-colors ${i === 0 && !paused ? "animate-pulse-row" : ""}`}
+                  >
+                    <td className="px-4 py-2.5 text-[rgba(26,255,140,0.4)]">
+                      {e.ts}
+                    </td>
+                    <td className="px-4 py-2.5 text-[rgba(26,255,140,0.6)]">
+                      {e.id}
+                    </td>
+                    <td className="px-4 py-2.5 text-foreground">{e.agent}</td>
+                    <td className="px-4 py-2.5 text-blue-400">{e.rule}</td>
+                    <td className="px-4 py-2.5 text-foreground/70">
+                      {e.action}
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded border ${s.cls}`}
+                      >
+                        {s.label}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2.5 text-muted-foreground max-w-xs truncate">
+                      {e.details}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="px-4 py-3 bg-[#030806] border-t border-[rgba(26,255,140,0.08)] text-center">
+          <span className="text-[10px] text-[rgba(26,255,140,0.3)] font-mono">
+            {filtered.length} entries ·{" "}
+            {paused ? "Stream paused" : "Auto-refreshing every ~4s"}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
 }
