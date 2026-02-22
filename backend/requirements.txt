@@ -5,8 +5,7 @@ google-genai
 python-multipart
 python-dotenv
 httpx
-
-
+langgraph
 numpy
 fpdf2
 firebase-admin

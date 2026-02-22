@@ -4,7 +4,7 @@ import { useState } from 'react';
 import {
     Flame, Shield, AlertTriangle, CheckCircle2, Play,
     Target, Cpu, Zap, Lock, RefreshCw, X, Eye,
-    ArrowRight, ChevronRight
+    ArrowRight, ChevronRight, FileCheck
 } from 'lucide-react';
 
 const ATTACK_SCENARIOS = [
@@ -168,6 +168,31 @@ export default function RedTeamPage() {
         }
     };
 
+    const downloadDossier = async () => {
+        if (!fullReport) return;
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8888'}/api/redteam/dossier`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    scenario: selectedScenario?.name || 'Unknown',
+                    verdict: verdict,
+                    report: fullReport
+                })
+            });
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Lexinel_RedTeam_Report.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        } catch (err) {
+            console.error("Dossier download failed", err);
+        }
+    };
+
     const severityColor = (s: string) =>
         ({ 'CRITICAL': 'text-red-400 border-red-800/40 bg-red-950/20', 'HIGH': 'text-orange-400 border-orange-800/40 bg-orange-950/20', 'MEDIUM': 'text-amber-400 border-amber-800/40 bg-amber-950/20' }[s] || '');
 
@@ -260,6 +285,15 @@ export default function RedTeamPage() {
                                             {runState === 'running' ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
                                             <span className="relative z-10">{runState === 'running' ? 'Simulating...' : 'Launch Attack'}</span>
                                         </button>
+                                        {fullReport && (
+                                            <button
+                                                onClick={downloadDossier}
+                                                className="ml-3 flex-shrink-0 flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold text-[#1aff8c] border border-[rgba(26,255,140,0.3)] bg-[rgba(26,255,140,0.06)] hover:bg-[rgba(26,255,140,0.1)] transition-all uppercase tracking-widest"
+                                            >
+                                                <FileCheck className="w-4 h-4" />
+                                                Report
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
 

@@ -22,9 +22,12 @@ from utils.cache import SimpleTTLCache
 from fpdf import FPDF
 import io
 
+from services.redteam_report import RedTeamReportGenerator
+
 router = APIRouter()
 gemini = GeminiService()
 ingestor = PolicyIngestor()
+redteam_gen = RedTeamReportGenerator()
 
 # ── LangGraph Agent ───────────────────────────────────────────────────────────
 from agent.graph import run_agent as run_langgraph_agent
@@ -61,6 +64,28 @@ async def run_agent_endpoint(request: AgentRunRequest):
         }
     except Exception as e:
         print(f"[AGENT ERROR] {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/redteam/dossier")
+async def generate_redteam_dossier(data: dict = Body(...)):
+    """
+    Generates a formal Red Team Penetration Testing Dossier (PDF).
+    """
+    try:
+        scenario = data.get("scenario", "Unknown")
+        verdict = data.get("verdict", "PENDING")
+        report = data.get("report", {})
+        
+        pdf_bytes = redteam_gen.create_vulnerability_dossier(scenario, verdict, report)
+        
+        filename = f"REDTEAM_{scenario.replace(' ', '_')}_{datetime.datetime.now().strftime('%Y%m%d')}.pdf"
+        return StreamingResponse(
+            io.BytesIO(pdf_bytes),
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    except Exception as e:
+        print(f"[RedTeam API] Dossier Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
